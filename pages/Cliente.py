@@ -21,19 +21,21 @@ st.markdown("""
 
 st.title("👤 Cadastro da Clinica")
 
-# 1. Definir proporções (ex: 20% / 80%)
-col1, espaco, col2 = st.columns([1, 1])
+with st.form(key="form_clinica"):
 
-# 2. Usar 'with' para adicionar widgets nas colunas
-with col1:
-    #st.text_input("ID")
-    codigo = st.text_input("Codigo")
+    # 1. Definir proporções (ex: 20% / 80%)
+    col1, espaco, col2 = st.columns([1, 1])
 
-with col2:
-    data_fundacao = st.text_input("Data de Fundação")
+    # 2. Usar 'with' para adicionar widgets nas colunas
+    with col1:
+        #st.text_input("ID")
+        codigo = st.text_input("Codigo")
+
+    with col2:
+        data_fundacao = st.text_input("Data de Fundação")
 
 # Formulário para cadastrar
-with st.form("form_clinica"):
+#with st.form("form_clinica"):
     codigo = st.text_input("Codigo")
     razao = st.text_input("Razão Social")
     fantasia = st.text_input("Nome Fantasia")
