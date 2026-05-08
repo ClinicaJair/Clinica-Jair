@@ -54,12 +54,12 @@ with st.form(key="form_clinica"):
 #    stragram = st.text_input("Stagram")
         submit = st.form_submit_button("Cadastrar")
 
-if submit:
-    # Inserir no PostgreSQL
-    supabase.table("clinicas").insert({"Razão Social": razao, "Nome Fantasia": fantasia,"Telefone": telefone }).execute()
-    st.success(f"Clinica {razao} cadastrado!")
+#if submit:
+#    # Inserir no PostgreSQL
+#    supabase.table("clinicas").insert({"Razão Social": razao, "Nome Fantasia": fantasia,"Telefone": telefone }).execute()
+#    st.success(f"Clinica {razao} cadastrado!")
 
 # Listar clientes
-st.subheader("Clinicas Cadastrados")
-response = supabase.table("clinicas").select("*").execute()
-st.dataframe(response.data)
+#st.subheader("Clinicas Cadastrados")
+#response = supabase.table("clinicas").select("*").execute()
+#st.dataframe(response.data)
