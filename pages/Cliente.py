@@ -24,6 +24,7 @@ st.title("👤 Cadastro da Clinica")
 with st.form("form_clinica"):
 
     st.write("Insira os dados abaixo:")
+
     # 1. Definir proporções (ex: 20% / 80%)
     col1, espaco, col2 = st.columns([1,7,2])
     col3, col4 = st.columns([1,5])
@@ -35,6 +36,8 @@ with st.form("form_clinica"):
     with col2:
         data_fundacao = st.text_input("Data de Fundação")
 
+    st.divider()
+    
     with col3:
         cep = st.text_input("CEP")
 
