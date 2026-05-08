@@ -28,6 +28,8 @@ col1, espaco, col2 = st.columns([1, 1])
 with col1:
     #st.text_input("ID")
     codigo = st.text_input("Codigo")
+
+with col1:
     data_fundacao = st.text_input("Data de Fundação")
 
 # Formulário para cadastrar
