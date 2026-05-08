@@ -6,7 +6,26 @@ url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
+# 1. Configurar a página (opcional, mas recomendado)
+st.set_page_config(layout="wide")
+
+# 2. CSS para remover o espaçamento do topo
+st.markdown("""
+        <style>
+               .block-container {
+                    padding-top: 1rem;
+                    padding-bottom: 0rem;
+                }
+        </style>
+        """, unsafe_allow_html=True)
 st.title("👤 Cadastro da Clinica")
+
+# 1. Definir proporções (ex: 20% / 80%)
+col1, col2 = st.columns([1, 4])
+
+# 2. Usar 'with' para adicionar widgets nas colunas
+with col1:
+    st.text_input("ID")
 
 # Formulário para cadastrar
 with st.form("form_clinica"):
