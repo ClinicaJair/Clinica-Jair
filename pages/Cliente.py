@@ -29,7 +29,7 @@ with col1:
     #st.text_input("ID")
     codigo = st.text_input("Codigo")
 
-with col1:
+with col2:
     data_fundacao = st.text_input("Data de Fundação")
 
 # Formulário para cadastrar
