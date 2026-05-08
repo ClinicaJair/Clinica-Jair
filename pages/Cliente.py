@@ -31,13 +31,13 @@ with st.form("form_clinica"):
 
     # 2. Usar 'with' para adicionar widgets nas colunas
     with col1:
-        codigo = st.text_input("Codigo")
+        codigo = st.text_input("Codigo",height=100)
 
     with col2:
-        data_fundacao = st.text_input("Data de Fundação")
+        data_fundacao = st.text_input("Data de Fundação",height=70)
 
     st.divider()
-    
+
     with col3:
         cep = st.text_input("CEP")
 
