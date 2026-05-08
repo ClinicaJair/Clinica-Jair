@@ -52,7 +52,7 @@ with st.form(key="form_clinica"):
 #    email = st.text_input("E-mail")
 #    site = st.text_input("Site")
 #    stragram = st.text_input("Stagram")
-        submit = st.form_submit_button("Cadastrar")
+#        submit = st.form_submit_button("Cadastrar")
 
 #if submit:
 #    # Inserir no PostgreSQL
