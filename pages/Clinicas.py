@@ -29,7 +29,7 @@ with st.form("form_clinica"):
     col1, col2, col3, col4 = st.columns([1,3,3,1])
     col5, col6 = st.columns([5,3])
     #col7 = st.columns([1])
-    col8, col9, col10, col11 = st.columns([2,4,4,1])
+    col8, col9, col10, col11 = st.columns([1,4,4,1])
 
     # 2. Usar 'with' para adicionar widgets nas colunas
     with col1:
