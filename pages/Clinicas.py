@@ -86,7 +86,7 @@ with st.form("form_clinica"):
 
 
 # Formulário para cadastrar
-with st.form("form_clinica"):
+#with st.form("form_clinica"):
 #    codigo = st.text_input("Codigo")
 #    razao = st.text_input("Razão Social")
 #    fantasia = st.text_input("Nome Fantasia")
@@ -102,7 +102,7 @@ with st.form("form_clinica"):
 #    data_fundacao = st.text_input("Data de Fundação")
 #    email = st.text_input("E-mail")
 #    site = st.text_input("Site")
-#    stragram = st.text_input("Stagram")
+3#    stragram = st.text_input("Stagram")
     submit = st.form_submit_button("Cadastrar")
 
 if submit:
