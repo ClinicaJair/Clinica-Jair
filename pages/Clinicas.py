@@ -102,7 +102,7 @@ with st.form("form_clinica"):
 #    data_fundacao = st.text_input("Data de Fundação")
 #    email = st.text_input("E-mail")
 #    site = st.text_input("Site")
-3#    stragram = st.text_input("Stagram")
+#    stragram = st.text_input("Stagram")
     submit = st.form_submit_button("Cadastrar")
 
 if submit:
