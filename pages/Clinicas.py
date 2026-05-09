@@ -52,8 +52,8 @@ with st.form("form_clinica"):
 
     st.divider()
 
-    with col7:
-        endereco = st.text_input("Endereço")
+#    with col7:
+#        endereco = st.text_input("Endereço")
 
     with col8:
         cep = st.text_input("CEP")
