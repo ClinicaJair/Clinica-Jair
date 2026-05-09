@@ -28,6 +28,8 @@ with st.form("form_clinica"):
     # 1. Definir proporções (ex: 20% / 80%)
     col1, col2, col3, col4 = st.columns([1,3,3,1])
     col5, col6 = st.columns([5,3])
+    col7 = st.columns()
+    col8, col9, col10, col11 = st.columns([2,4,4,1])
 
     # 2. Usar 'with' para adicionar widgets nas colunas
     with col1:
@@ -42,14 +44,28 @@ with st.form("form_clinica"):
     with col4:
         data_fundacao = st.text_input("Data de Fundação")
 
-    #st.divider()
-
     with col5:
         razao = st.text_input("Razão Social")
 
     with col6:
         fantasia = st.text_input("Nome Fantasia")
 
+    st.divider()
+
+    with col7:
+        endereco = st.text_input("Endereço")
+
+    with col8:
+        cep = st.text_input("CEP")
+
+    with col9:
+        bairro = st.text_input("Bairro")
+
+    with col10:
+        cidade = st.text_input("Cidade")
+
+    with col11:
+        estado = st.text_input("Estado")
 
 # Formulário para cadastrar
 with st.form("form_clinica"):
