@@ -21,34 +21,41 @@ st.markdown("""
 
 st.title("👤 Cadastro da Clinica")
 
-#with st.form("form_clinica"):
+with st.form("form_clinica"):
 
     #st.write("Insira os dados abaixo:")
 
     # 1. Definir proporções (ex: 20% / 80%)
-#    col1, col2, col3 = st.columns([1,8,1])
-#    col4, col5, col6 = st.columns([1,5])
+    col1, espaco, col2 = st.columns([1,8,1])
+    col3, col4 = st.columns([1,5])
+    col5, col6 = st.columns([4,4])
 
     # 2. Usar 'with' para adicionar widgets nas colunas
-#    with col1:
-#        codigo = st.text_input("Codigo")
+    with col1:
+        codigo = st.text_input("Codigo")
 
- #   with col2:
- #       data_fundacao = st.text_input("Data de Fundação")
+    with col2:
+        data_fundacao = st.text_input("Data de Fundação")
 
     #st.divider()
 
-#    with col3:
-#        cep = st.text_input("CEP")
+    with col3:
+        razao = st.text_input("Razão Social")
 
-#    with col4:
-#        endereco = st.text_input("Endereço")
+    with col4:
+        fantasia = st.text_input("Nome Fantasia")
+
+    with col5:
+        cnpj = st.text_input("CNPJ")
+
+    with col6:
+        inscricao = st.text_input("Inscrição Estadual")
 
 # Formulário para cadastrar
 with st.form("form_clinica"):
-    codigo = st.text_input("Codigo")
-    razao = st.text_input("Razão Social")
-    fantasia = st.text_input("Nome Fantasia")
+#    codigo = st.text_input("Codigo")
+#    razao = st.text_input("Razão Social")
+#    fantasia = st.text_input("Nome Fantasia")
     endereco = st.text_input("Endereço")
     cep = st.text_input("CEP")
     bairro = st.text_input("Bairro")
@@ -56,9 +63,9 @@ with st.form("form_clinica"):
     estado = st.text_input("Estado")
     telefone = st.text_input("Telefone")
     telefone1 = st.text_input("Telefone1")
-    cnpj = st.text_input("CNPJ")
-    inscricao = st.text_input("Inscrição Estadual")
-    data_fundacao = st.text_input("Data de Fundação")
+#    cnpj = st.text_input("CNPJ")
+#    inscricao = st.text_input("Inscrição Estadual")
+#    data_fundacao = st.text_input("Data de Fundação")
     email = st.text_input("E-mail")
     site = st.text_input("Site")
     stragram = st.text_input("Stagram")
