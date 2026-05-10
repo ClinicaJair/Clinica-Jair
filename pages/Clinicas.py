@@ -110,7 +110,7 @@ if submit:
     supabase.table("clinicas").insert({"Codigo": codigo, "Razão Social": razao, "Nome Fantasia": fantasia, "Endereço": endereco,
                                        "CEP": cep, "Bairro":bairro, "Cidade": cidade, "Estado": estado, "Telefone": telefone,
                                        "Telefone1": telefone1, "CNPJ": cnpj, "Inscrição Estadual": inscricao,
-                                       "Data de Fundação": data_fundacao, "E-mail": email, "Site": site, "Stagram": stragram }).execute()
+                                       "Data de Fundação": data_fundacao, "E-mail": email, "Site": site, "Stagram": stragram}).execute()
     st.success(f"Clinica {razao} cadastrado!")
 
 # Listar clientes
