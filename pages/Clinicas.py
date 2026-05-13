@@ -86,7 +86,7 @@ with st.form("form_clinica"):
 
 
 # Formulário para cadastrar
-#with st.form("form_clinica"):
+with st.form("form_clinica"):
 #    codigo = st.text_input("Codigo")
 #    razao = st.text_input("Razão Social")
 #    fantasia = st.text_input("Nome Fantasia")
