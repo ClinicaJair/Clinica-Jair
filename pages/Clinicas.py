@@ -107,10 +107,10 @@ with st.form("form_clinica"):
 
 if submit:
     # Inserir no PostgreSQL
-    supabase.table("clinicas").insert({"codigo":codigo, "razao":razao, "fantasia":fantasia, "endereco":endereco,
-                                       "cep":cep, "bairro":bairro, "cidade":cidade, "estado":estado, "telefone":telefone,
-                                       "telefone1":telefone1, "cnpj":cnpj, "inscricao":inscricao,
-                                       "data_fundacao":data_fundacao, "email":email, "site":site, "instagram":instagram}).execute()
+    supabase.table("clinicas").insert({"codigo": codigo, "razao": razao, "fantasia": fantasia, "endereco": endereco,
+                                       "cep": cep, "bairro": bairro, "cidade": cidade, "estado": estado, "telefone": telefone,
+                                       "telefone1": telefone1, "cnpj": cnpj, "inscricao": inscricao,
+                                       "data_fundacao": data_fundacao, "email": email, "site": site, "instagram": instagram}).execute()
     st.success(f"Clinica {razao} cadastrado!")
 
 # Listar clientes
