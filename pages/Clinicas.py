@@ -30,8 +30,8 @@ with st.form("form_clinica"):
     col5, col6 = st.columns([5,3])
     col7, col8 = st.columns([8,2])
     col9, col10, col11 = st.columns([4,4,1])
-    col12, col13, col14 = st.columns([2,2,6])
-    col15, col16 = st.columns([4,4])
+    col12, col13 = st.columns([2,2,6])
+    col14, col15, col16 = st.columns([3,3,3])
 
     # 2. Usar 'with' para adicionar widgets nas colunas
     with col1:
@@ -52,7 +52,7 @@ with st.form("form_clinica"):
     with col6:
         fantasia = st.text_input("Nome Fantasia")
 
-    st.divider()
+    #st.divider()
 
     with col7:
         endereco = st.text_input("Endereço")
@@ -82,7 +82,7 @@ with st.form("form_clinica"):
         site = st.text_input("Site")
 
     with col16:
-        stragram = st.text_input("Stagram")
+        stragram = st.text_input("Stragram")
 
 
 # Formulário para cadastrar
@@ -107,10 +107,10 @@ with st.form("form_clinica"):
 
 if submit:
     # Inserir no PostgreSQL
-    supabase.table("clinicas").insert({"Codigo": codigo, "Razão Social": razao, "Nome Fantasia": fantasia, "Endereço": endereco,
-                                       "CEP": cep, "Bairro":bairro, "Cidade": cidade, "Estado": estado, "Telefone": telefone,
-                                       "Telefone1": telefone1, "CNPJ": cnpj, "Inscrição Estadual": inscricao,
-                                       "Data de Fundação": data_fundacao, "E-mail": email, "Site": site, "Stagram": stragram}).execute()
+    supabase.table("clinicas").insert({"Codigo":codigo, "Razão Social":razao, "Nome Fantasia":fantasia, "Endereço":endereco}).exec
+ #                                      "CEP": cep, "Bairro":bairro, "Cidade": cidade, "Estado": estado, "Telefone": telefone,
+ #                                      "Telefone1": telefone1, "CNPJ": cnpj, "Inscrição Estadual": inscricao,
+ #                                      "Data de Fundação": data_fundacao, "E-mail": email, "Site": site, "Stragram": stragram}).execute()
     st.success(f"Clinica {razao} cadastrado!")
 
 # Listar clientes
