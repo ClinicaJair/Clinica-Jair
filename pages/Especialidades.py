@@ -1,5 +1,5 @@
 import streamlit as st
-from st_supabase_connection import SupabaseConnection
+from supabase import create_client
 
 st.set_page_config(page_title="Cadastrar", page_icon="📂")
 st.title("📂 Cadastrar Produto")
