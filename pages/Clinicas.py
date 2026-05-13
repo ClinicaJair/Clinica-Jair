@@ -82,7 +82,7 @@ with st.form("form_clinica"):
         site = st.text_input("Site")
 
     with col16:
-        stragram = st.text_input("Stragram")
+        instagram = st.text_input("Instagram")
 
 
 # Formulário para cadastrar
@@ -102,15 +102,15 @@ with st.form("form_clinica"):
 #    data_fundacao = st.text_input("Data de Fundação")
 #    email = st.text_input("E-mail")
 #    site = st.text_input("Site")
-#    stragram = st.text_input("Stagram")
+#    instagram = st.text_input("Instagram")
     submit = st.form_submit_button("Cadastrar")
 
 if submit:
     # Inserir no PostgreSQL
     supabase.table("clinicas").insert({"Codigo":codigo, "Razão Social":razao, "Nome Fantasia":fantasia, "Endereço":endereco,
-                                       "CEP": cep, "Bairro":bairro, "Cidade": cidade, "Estado": estado, "Telefone": telefone,
-                                       "Telefone1": telefone1, "CNPJ": cnpj, "Inscrição Estadual": inscricao,
-                                       "Data de Fundação": data_fundacao, "E-mail": email, "Site": site, "Stragram": stragram}).execute()
+                                       "CEP":cep, "Bairro":bairro, "Cidade":cidade, "Estado":estado, "Telefone":telefone,
+                                       "Telefone1":telefone1, "CNPJ":cnpj, "Inscrição Estadual":inscricao,
+                                       "Data de Fundação":data_fundacao, "E-mail":email, "Site":site, "Instagram":instagram}).execute()
     st.success(f"Clinica {razao} cadastrado!")
 
 # Listar clientes
