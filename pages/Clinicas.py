@@ -23,7 +23,7 @@ st.title("👤 Cadastro da Clinica")
 
 with st.form("form_clinica"):
 
-    #st.write("Insira os dados abaixo:")
+    st.write("Insira os dados abaixo:")
 
     # 1. Definir proporções (ex: 20% / 80%)
     col1, col2, col3, col4 = st.columns([1,3,3,1])
