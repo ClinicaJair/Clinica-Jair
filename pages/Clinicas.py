@@ -26,7 +26,7 @@ with st.form("form_clinica"):
     #st.write("Insira os dados abaixo:")
 
     # 1. Definir proporções (ex: 20% / 80%)
-    col1, col2, col3, col4 = st.columns([1,7,3,2])
+    col1, col2, col3, col4 = st.columns([1,7,4,2])
     col5, col6 = st.columns([5,3])
     col7, col8, col9 = st.columns([1,6,3])
     col10, col11, = st.columns([4,1])
@@ -44,7 +44,7 @@ with st.form("form_clinica"):
         fantasia = st.text_input("Nome Fantasia")
 
     with col4:
-        data_fundacao = st.text_input("Data de Fundação.")
+        data_fundacao = st.text_input("Data de Fundação")
 
     with col5:
         cnpj = st.text_input("CNPJ")
