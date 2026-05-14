@@ -1,75 +1,56 @@
 import streamlit as st
 from supabase import create_client
 
-# Conexão Supabase
-url = st.secrets["SUPABASE_URL"]
-key = st.secrets["SUPABASE_KEY"]
+st.set_page_config(page_title="Clientes")
+
+# Conexão com Supabase usando os secrets do Streamlit
+url = st.secrets["supabase"]["supabase_url"]
+key = st.secrets["supabase"]["supabase_key"]
 supabase = create_client(url, key)
 
-# 1. Configurar a página (opcional, mas recomendado)
-st.set_page_config(layout="wide")
+st.title("Cadastro de Clientes")
 
-# 2. CSS para remover o espaçamento do topo
-st.markdown("""
-        <style>
-               .block-container {
-                    padding-top: 1rem;
-                    padding-bottom: 0rem;
-                }
-        </style>
-        """, unsafe_allow_html=True)
+menu = ["Cadastrar", "Consultar/Editar/Excluir"]
+choice = st.sidebar.selectbox("Ação", menu)
 
-st.title("👤 Cadastro da Clinica")
+# --- CREATE ---
+if choice == "Cadastrar":
+    st.subheader("Adicionar Novo Cliente")
+    with st.form("form_cliente"):
+        nome = st.text_input("Nome")
+        email = st.text_input("E-mail")
+        telefone = st.text_input("Telefone")
+        submit = st.form_submit_button("Salvar Cliente")
 
-with st.form("form_clinica"):
+        if submit:
+            if nome and email:
+                data = supabase.table("clientes").insert({"nome": nome, "email": email, "telefone": telefone}).execute()
+                st.success(f"Cliente {nome} cadastrado com sucesso!")
+            else:
+                st.error("Por favor, preencha nome e e-mail.")
 
-    #st.write("Insira os dados abaixo:")
+# --- READ, UPDATE E DELETE ---
+elif choice == "Consultar/Editar/Excluir":
+    st.subheader("Clientes Cadastrados")
+    response = supabase.table("clientes").select("*").execute()
+    clientes = response.data
 
-    # 1. Definir proporções (ex: 20% / 80%)
-    col1, espaco, col2 = st.columns([1,7,2])
-    col3, col4 = st.columns([1,5])
+    for c in clientes:
+        with st.expander(f"{c['nome']} - {c['email']}"):
+            with st.form(f"form_edit_{c['id']}"):
+                novo_nome = st.text_input("Nome", value=c['nome'])
+                novo_email = st.text_input("E-mail", value=c['email'])
+                novo_tel = st.text_input("Telefone", value=c['telefone'])
 
-    # 2. Usar 'with' para adicionar widgets nas colunas
-    with col1:
-        codigo = st.text_input("Codigo")
+                editar = st.form_submit_button("Salvar Alterações")
+                deletar = st.form_submit_button("Excluir Cliente")
 
-    with col2:
-        data_fundacao = st.text_input("Data de Fundação")
-
-    st.divider()
-
-    with col3:
-        cep = st.text_input("CEP")
-
-    with col4:
-        endereco = st.text_input("Endereço")
-
-# Formulário para cadastrar
-#with st.form("form_clinica"):
-#    codigo = st.text_input("Codigo")
-#    razao = st.text_input("Razão Social")
-#    fantasia = st.text_input("Nome Fantasia")
-#    endereco = st.text_input("Endereço")
-#    cep = st.text_input("CEP")
-#    bairro = st.text_input("Bairro")
-#    cidade = st.text_input("Cidade")
-#    estado = st.text_input("Estado")
-#    telefone = st.text_input("Telefone")
-#    telefone1 = st.text_input("Telefone1")
-#    cnpj = st.text_input("CNPJ")
-#    inscricao = st.text_input("Inscrição Estadual")
-#    data_fundacao = st.text_input("Data de Fundação")
-#    email = st.text_input("E-mail")
-#    site = st.text_input("Site")
-#    stragram = st.text_input("Stagram")
-#        submit = st.form_submit_button("Cadastrar")
-
-#if submit:
-#    # Inserir no PostgreSQL
-#    supabase.table("clinicas").insert({"Razão Social": razao, "Nome Fantasia": fantasia,"Telefone": telefone }).execute()
-#    st.success(f"Clinica {razao} cadastrado!")
-
-# Listar clientes
-#st.subheader("Clinicas Cadastrados")
-#response = supabase.table("clinicas").select("*").execute()
-#st.dataframe(response.data)
+                if editar:
+                    supabase.table("clientes").update({"nome": novo_nome, "email": novo_email, "telefone": novo_tel}).eq("id",
+                                                                                                                         c['id']).execute()
+                    st.success("Dados atualizados!")
+                    st.rerun()
+                if deletar:
+                    supabase.table("clientes").delete().eq("id", c['id']).execute()
+                    st.success("Cliente excluído!")
+                    st.rerun()
