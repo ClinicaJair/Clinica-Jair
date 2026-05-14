@@ -26,10 +26,10 @@ with st.form("form_clinica"):
     #st.write("Insira os dados abaixo:")
 
     # 1. Definir proporções (ex: 20% / 80%)
-    col1, col2, col3, col4 = st.columns([1,3,3,1])
+    col1, col2, col3, col4 = st.columns([1,5,3,1])
     col5, col6 = st.columns([5,3])
-    col7, col8 = st.columns([8,2])
-    col9, col10, col11 = st.columns([4,4,1])
+    col7, col8, col9 = st.columns([2,6,3])
+    col10, col11, = st.columns([4,1])
     col12, col13 = st.columns([2,6])
     col14, col15, col16 = st.columns([3,3,3])
 
@@ -38,27 +38,27 @@ with st.form("form_clinica"):
         codigo = st.text_input("Codigo")
 
     with col2:
-        cnpj = st.text_input("CNPJ")
+        razao = st.text_input("Razão Social")
 
     with col3:
-        inscricao = st.text_input("Inscrição Estadual")
+        fantasia = st.text_input("Nome Fantasia")
 
     with col4:
         data_fundacao = st.text_input("Data de Fundação")
 
     with col5:
-        razao = st.text_input("Razão Social")
+        cnpj = st.text_input("CNPJ")
 
     with col6:
-        fantasia = st.text_input("Nome Fantasia")
+        inscricao = st.text_input("Inscrição Estadual")
 
     #st.divider()
 
     with col7:
-        endereco = st.text_input("Endereço")
+        cep = st.text_input("CEP")
 
     with col8:
-        cep = st.text_input("CEP")
+        endereco = st.text_input("Endereço")
 
     with col9:
         bairro = st.text_input("Bairro")
