@@ -27,9 +27,8 @@ with st.form("form_clinica"):
 
     # 1. Definir proporções (ex: 20% / 80%)
     col1, col2, col3, col4 = st.columns([1,6,4,2])
-    col5, col6, col7, col8 = st.columns([2,2,2,6])
-    col9, col10, col11, = st.columns([4,1,2])
-    col12, col13 = st.columns([2,6])
+    col5, col6, col7, col8 = st.columns([2,2,1,7])
+    col9, col10, col11, col12, col13 = st.columns([3,3,1,3,3])
     col14, col15, col16 = st.columns([3,3,3])
 
     # 2. Usar 'with' para adicionar widgets nas colunas
