@@ -127,6 +127,7 @@ if submit2:
     #                                   "telefone1": telefone1, "cnpj": cnpj, "inscricao": inscricao,
     #                                   "data_fundacao": data_fundacao, "email": email, "site": site, "instagram": instagram}).execute()
     #st.success(f"Clinica {razao} cadastrado!")
+    st.text_input[razao] = ''
     st.success(f"Registro Cancelado!")
     st.rerun()
 
