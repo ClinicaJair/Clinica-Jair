@@ -82,9 +82,23 @@ with st.form("form_clinica"):
     with col16:
         instagram = st.text_input("Instagram")
 
-    submit = st.form_submit_button("Cadastrar")
-    submit1 = st.form_submit_button("Deletart")
-    submit2 = st.form_submit_button("Sair")
+    # 3. Coloca o botão de submit lado a lado com um botão de cancelar
+    col_btn1, col_btn2, col_btn3 = st.columns([2, 2, 2])
+
+    with col_btn1:
+        # Botão de envio (Submit)
+        submit = st.form_submit_button(label='Salvar')
+    with col_btn2:
+        # Botão comum (pode ser usado para cancelar/limpar)
+        submit1 = st.form_submit_button(label='Deletar')
+    with col_btn3:
+        # Botão comum (pode ser usado para cancelar/limpar)
+        submit2 = st.form_submit_button(label='Cancelar')
+
+
+#    submit = st.form_submit_button("Cadastrar")
+#    submit1 = st.form_submit_button("Deletart")
+#    submit2 = st.form_submit_button("Sair")
 
 if submit:
     # Inserir no PostgreSQL
