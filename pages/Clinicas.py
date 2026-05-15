@@ -83,6 +83,8 @@ with st.form("form_clinica"):
         instagram = st.text_input("Instagram")
 
     submit = st.form_submit_button("Cadastrar")
+    submit1 = st.form_submit_button("Deletart")
+    submit2 = st.form_submit_button("Sair")
 
 if submit:
     # Inserir no PostgreSQL
@@ -91,6 +93,24 @@ if submit:
                                        "telefone1": telefone1, "cnpj": cnpj, "inscricao": inscricao,
                                        "data_fundacao": data_fundacao, "email": email, "site": site, "instagram": instagram}).execute()
     st.success(f"Clinica {razao} cadastrado!")
+
+if submit1:
+    # Deletar no PostgreSQL
+    supabase.table("clinicas").insert({"codigo": codigo, "razao": razao, "fantasia": fantasia, "endereco": endereco,
+                                       "cep": cep, "bairro": bairro, "cidade": cidade, "estado": estado, "telefone": telefone,
+                                       "telefone1": telefone1, "cnpj": cnpj, "inscricao": inscricao,
+                                       "data_fundacao": data_fundacao, "email": email, "site": site, "instagram": instagram}).execute()
+    supabase.table("clientes").delete().eq("codigo", clinicas['codigo']).execute()
+    #st.success("Cliente excluído!")
+    st.success(f"Clinica {razao} deletada!")
+
+#if submit:
+#    # Inserir no PostgreSQL
+#    supabase.table("clinicas").insert({"codigo": codigo, "razao": razao, "fantasia": fantasia, "endereco": endereco,
+#                                       "cep": cep, "bairro": bairro, "cidade": cidade, "estado": estado, "telefone": telefone,
+#                                       "telefone1": telefone1, "cnpj": cnpj, "inscricao": inscricao,
+#                                       "data_fundacao": data_fundacao, "email": email, "site": site, "instagram": instagram}).execute()
+#    st.success(f"Clinica {razao} cadastrado!")
 
 # Listar clientes
 #st.subheader("Clinicas Cadastrados")
