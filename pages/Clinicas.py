@@ -75,7 +75,7 @@ with st.form("form_clinica"):
     with col11:
         estado = st.text_input("Estado")
         # 3. Interface do Streamlit
-        st.title("Exemplo de Combobox com Supabase")
+        #st.title("Exemplo de Combobox com Supabase")
 
         # Substitua 'sua_tabela' pelo nome da tabela real no seu banco de dados
         tabela_selecionada = "clientes"
@@ -88,7 +88,8 @@ with st.form("form_clinica"):
             opcoes = [linha["nome"] for linha in dados]
 
             # Cria a combobox (selectbox)
-            opcao_selecionada = st.selectbox("Seleciona uma opção da tabela:", opcoes)
+            #opcao_selecionada = st.selectbox("Seleciona uma opção da tabela:", opcoes)
+            opcao_selecionada = st.selectbox("", opcoes)
 
             # Exibe a escolha do usuário
             st.write(f"Você selecionou: {opcao_selecionada}")
