@@ -20,6 +20,14 @@ st.markdown("""
         """, unsafe_allow_html=True)
 
 st.title("👤 Cadastro da Clinica")
+#******************
+def obter_dados_tabela(clientes):
+    # Executa um SELECT * na tabela desejada
+    response = supabase.table(clientes).select("*").execute()
+    return response.data
+
+
+#******************
 
 with st.form("form_clinica"):
 
@@ -66,6 +74,26 @@ with st.form("form_clinica"):
 
     with col11:
         estado = st.text_input("Estado")
+        # 3. Interface do Streamlit
+        st.title("Exemplo de Combobox com Supabase")
+
+        # Substitua 'sua_tabela' pelo nome da tabela real no seu banco de dados
+        tabela_selecionada = "clientes"
+
+        # Busca os dados
+        dados = obter_dados_tabela(tabela_selecionada)
+
+        if dados:
+            # Suponha que sua tabela tenha uma coluna chamada 'nome' que você quer exibir no combobox
+            opcoes = [linha["nome"] for linha in dados]
+
+            # Cria a combobox (selectbox)
+            opcao_selecionada = st.selectbox("Seleciona uma opção da tabela:", opcoes)
+
+            # Exibe a escolha do usuário
+            st.write(f"Você selecionou: {opcao_selecionada}")
+        else:
+            st.warning("Nenhum dado encontrado ou erro na conexão.")
 
     with col12:
         telefone = st.text_input("Telefone")
@@ -107,7 +135,8 @@ if submit:
                                        "telefone1": telefone1, "cnpj": cnpj, "inscricao": inscricao,
                                        "data_fundacao": data_fundacao, "email": email, "site": site, "instagram": instagram}).execute()
     st.success(f"Clinica {razao} cadastrado!")
-    st.rerun()
+    clear_on_submit = True
+    #st.rerun()
 
 if submit1:
     # Deletar no PostgreSQL
@@ -118,7 +147,8 @@ if submit1:
     supabase.table("clientes").delete().eq("codigo", clinicas['codigo']).execute()
     #st.success("Cliente excluído!")
     st.success(f"Clinica {razao} deletada!")
-    st.rerun()
+    clear_on_submit = True
+    #st.rerun()
 
 if submit2:
     # Cancelar no Cadastro
@@ -129,7 +159,8 @@ if submit2:
     #st.success(f"Clinica {razao} cadastrado!")
     st.text_input[razao] = ''
     st.success(f"Registro Cancelado!")
-    st.rerun()
+    clear_on_submit = True
+    #st.rerun()
 
 # Listar clientes
 #st.subheader("Clinicas Cadastrados")
