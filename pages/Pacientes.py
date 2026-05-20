@@ -4,9 +4,10 @@ import pandas as pd
 
 # 1. Configuração da Conexão com Supabase
 # É recomendado usar st.secrets no Streamlit para segurança
-SUPABASE_URL = "SUA_URL_SUPABASE"
-SUPABASE_KEY = "SUA_CHAVE_SUPABASE"
-
+#SUPABASE_URL = "SUA_URL_SUPABASE"
+#SUPABASE_KEY = "SUA_CHAVE_SUPABASE"
+SUPABASE_URL = "https://lcruodkgvahvyijbgbch.supabase.co"
+SUPABASE_KEY = "sb_publishable_2dK9DdBevblDyz5ZhYtyaQ_6E0woJsZ"
 
 @st.cache_resource
 def init_supabase():
