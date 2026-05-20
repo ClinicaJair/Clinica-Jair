@@ -19,15 +19,33 @@ st.markdown("""
         </style>
         """, unsafe_allow_html=True)
 
-st.title("👤 Cadastro da Clinica")
 #******************
+# 3. Funções do Banco de Dados (CRUD)
+def create_customer(nome, email, telefone):
+    supabase.table("clientes").insert({"nome": nome, "email": email, "telefone": telefone}).execute()
+    st.success("Cliente cadastrado com sucesso!")
+
+def read_customers():
+    response = supabase.table("clientes").select("*").execute()
+    return pd.DataFrame(response.data)
+
+def update_customer(cliente_id, nome, email, telefone):
+    supabase.table("clientes").update({"nome": nome, "email": email, "telefone": telefone}).eq("id", cliente_id).execute()
+    st.success("Cliente atualizado com sucesso!")
+
+def delete_customer(cliente_id):
+    supabase.table("clientes").delete().eq("id", cliente_id).execute()
+    st.success("Cliente deletado com sucesso!")
+
 def obter_dados_tabela(clientes):
     # Executa um SELECT * na tabela desejada
     response = supabase.table(clientes).select("*").execute()
     return response.data
 
-
 #******************
+
+# 4. Layout da Interface (Formulário e DataFrame)
+st.title("👤 Cadastro da Clinica")
 
 with st.form("form_clinica"):
 
@@ -78,23 +96,23 @@ with st.form("form_clinica"):
         #st.title("Exemplo de Combobox com Supabase")
 
         # Substitua 'sua_tabela' pelo nome da tabela real no seu banco de dados
-        tabela_selecionada = "clientes"
+        #tabela_selecionada = "clientes"
 
         # Busca os dados
-        dados = obter_dados_tabela(tabela_selecionada)
+        #dados = obter_dados_tabela(tabela_selecionada)
 
-        if dados:
+        #if dados:
             # Suponha que sua tabela tenha uma coluna chamada 'nome' que você quer exibir no combobox
-            opcoes = [linha["nome"] for linha in dados]
+            #opcoes = [linha["nome"] for linha in dados]
 
             # Cria a combobox (selectbox)
             #opcao_selecionada = st.selectbox("Seleciona uma opção da tabela:", opcoes)
-            opcao_selecionada = st.selectbox("", opcoes)
+            #opcao_selecionada = st.selectbox("", opcoes)
 
             # Exibe a escolha do usuário
-            st.write(f"Você selecionou: {opcao_selecionada}")
-        else:
-            st.warning("Nenhum dado encontrado ou erro na conexão.")
+            #st.write(f"Você selecionou: {opcao_selecionada}")
+        #else:
+            #st.warning("Nenhum dado encontrado ou erro na conexão.")
 
     with col12:
         telefone = st.text_input("Telefone")
@@ -167,3 +185,23 @@ if submit2:
 #st.subheader("Clinicas Cadastrados")
 #response = supabase.table("clinicas").select("*").execute()
 #st.dataframe(response.data)
+
+# Aba 2: Exibição dos dados e Seleção Interativa
+st.subheader("Lista de Clientes")
+
+if not df_clientes.empty:
+    # Seleção nativa de linhas do Streamlit (on_select="rerun" para atualizar a tela)
+    event = st.dataframe(
+        df_clientes,
+        use_container_width=True,
+        hide_index=True,
+        on_select="rerun",
+        selection_mode="single-row"
+    )
+
+    # Ao clicar em uma linha, atualiza o session_state e recarrega a tela
+    if event.selection.rows:
+        selected_index = event.selection.rows[0]
+        st.session_state.selected_customer_id = df_clientes.iloc[selected_index]['id']
+else:
+    st.info("Nenhum cliente cadastrado ainda.")
