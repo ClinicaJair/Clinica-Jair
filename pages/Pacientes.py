@@ -110,7 +110,7 @@ if not df_clientes.empty:
 
     # Ao clicar em uma linha, atualiza o session_state e recarrega a tela
     if event.selection.rows:
-        selected_index = event.selection.rows[1]
+        selected_index = event.selection.rows[0]
         st.session_state.selected_customer_id = df_clientes.iloc[selected_index]['id']
 else:
     st.info("Nenhum cliente cadastrado ainda.")
