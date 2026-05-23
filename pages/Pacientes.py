@@ -98,6 +98,27 @@ with st.container():
 # Aba 2: Exibição dos dados e Seleção Interativa
 st.subheader("Lista de Clientes")
 
+# Campo de texto para digitação
+termo_busca = st.text_input("Digite o nome ou ID para filtrar:")
+
+# 3. Consulta ao Banco de Dados
+if termo_busca:
+    try:
+        # Busca na tabela 'usuarios' onde o campo 'nome' é igual ao digitado
+        response = supabase.table("usuarios").select("*").eq("nome", termo_busca).execute()
+
+        dados = response.data  # Retorna uma lista de dicionários
+
+        if dados:
+            # Exibe os resultados em formato de tabela interativa
+            df_clientes = pd.DataFrame(dados)
+            st.dataframe(df_clientes)
+        else:
+            st.warning("Nenhum registro encontrado para este termo.")
+
+    except Exception as e:
+        st.error(f"Erro ao consultar o banco de dados: {e}")
+
 if not df_clientes.empty:
     # Seleção nativa de linhas do Streamlit (on_select="rerun" para atualizar a tela)
     event = st.dataframe(
