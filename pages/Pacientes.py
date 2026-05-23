@@ -112,16 +112,16 @@ if termo_busca:
         if dados:
             # Exibe os resultados em formato de tabela interativa
             df_clientes = pd.DataFrame(dados)
-            event = st.dataframe(
-                df_clientes,
-                use_container_width = True,
-                hide_index = True,
-                on_select = "rerun",
-                selection_mode = "single-row"
-            )
+            #event = st.dataframe(
+            #    df_clientes,
+            #    use_container_width = True,
+            #    hide_index = True,
+            #    on_select = "rerun",
+            #    selection_mode = "single-row"
+            #)
 
-        else:
-            st.warning("Nenhum registro encontrado para este termo.")
+        #else:
+            #st.warning("Nenhum registro encontrado para este termo.")
 
     except Exception as e:
         st.error(f"Erro ao consultar o banco de dados: {e}")
