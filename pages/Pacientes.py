@@ -105,14 +105,21 @@ termo_busca = st.text_input("Digite o nome ou ID para filtrar:")
 if termo_busca:
     try:
         # Busca na tabela 'usuarios' onde o campo 'nome' é igual ao digitado
-        response = supabase.table("usuarios").select("*").eq("nome", termo_busca).execute()
+        response = supabase.table("clientes").select("*").eq("nome", termo_busca).execute()
 
         dados = response.data  # Retorna uma lista de dicionários
 
         if dados:
             # Exibe os resultados em formato de tabela interativa
             df_clientes = pd.DataFrame(dados)
-            st.dataframe(df_clientes)
+            event = st.dataframe(
+                df_clientes,
+                use_container_width = True,
+                hide_index = True,
+                on_select = "rerun",
+                selection_mode = "single-row"
+            )
+
         else:
             st.warning("Nenhum registro encontrado para este termo.")
 
