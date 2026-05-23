@@ -4,6 +4,9 @@ from supabase import create_client
 # Conexão Supabase
 url = st.secrets["SUPABASE_URL"]
 key = st.secrets["SUPABASE_KEY"]
+#url = "https://lcruodkgvahvyijbgbch.supabase.co"
+#key = "sb_publishable_2dK9DdBevblDyz5ZhYtyaQ_6E0woJsZ"
+
 supabase = create_client(url, key)
 
 # 1. Configurar a página (opcional, mas recomendado)
@@ -188,6 +191,7 @@ if submit2:
 
 # Aba 2: Exibição dos dados e Seleção Interativa
 st.subheader("Lista de Clientes")
+#df_clientes = get_clinicas()
 
 if not df_clientes.empty:
     # Seleção nativa de linhas do Streamlit (on_select="rerun" para atualizar a tela)
