@@ -118,7 +118,7 @@ with col_form:
             options=list(opcoes_estado.keys()),
             index=default_index_estado
         )
-        id_estado_selecionado = opcoes_estado[input_estado_str]
+        id_estado_sel = opcoes_estado[input_estado_str]
 
         # Botões de ação dentro do formulário
         col_btn1, col_btn2 = st.columns(2)
@@ -143,7 +143,7 @@ with col_form:
             dados_cliente = {
                 "nome": input_nome,
                 "email": input_email,
-                "id_estado": id_estado_selecionado
+                "id_estado": id_estado_sel
             }
 
             if modo_edicao:
