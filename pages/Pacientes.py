@@ -21,12 +21,12 @@ def read_customers():
 
 
 def create_customer(nome, email, telefone):
-    supabase.table("clientes").insert({"nome": nome, "email": email, "telefone": telefone}).execute()
+    supabase.table("clientes").insert({"id": codigo, "nome": nome, "email": email, "telefone": telefone, "estado": estado}).execute()
     st.success("Cliente cadastrado com sucesso!")
 
 
 def update_customer(cliente_id, nome, email, telefone):
-    supabase.table("clientes").update({"nome": nome, "email": email, "telefone": telefone}).eq("id", cliente_id).execute()
+    supabase.table("clientes").update({"id": codigo, "nome": nome, "email": email, "telefone": telefone, "estado": estado}).eq("id", cliente_id).execute()
     st.success("Cliente atualizado com sucesso!")
 
 
@@ -38,6 +38,11 @@ def obter_dados_tabela(clientes):
     # Executa um SELECT * na tabela desejada
     response = supabase.table(clientes).select("*").execute()
     return response.data
+
+def obter_estados(estados):
+    # Executa um SELECT * na tabela desejada
+    response_estado = supabase.table(estados).select("*").execute()
+    return response_estado.data
 
 
 # 3. Layout da Interface (Formulário e DataFrame)
@@ -62,12 +67,12 @@ with st.container():
     st.title("Exemplo de Combobox com Supabase")
 
     # Substitua 'sua_tabela' pelo nome da tabela real no seu banco de dados
-    tabela_selecionada = "produtos"
+    tabela_selecionada = "estados"
 
     # Busca os dados
-    dados = obter_dados_tabela(tabela_selecionada)
+    dados1 = obter_estados(tabela_selecionada)
 
-    if dados:
+    if dados1:
         # Suponha que sua tabela tenha uma coluna chamada 'nome' que você quer exibir no combobox
         opcoes = [linha["nome"] for linha in dados]
 
