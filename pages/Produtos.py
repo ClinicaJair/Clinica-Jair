@@ -3,139 +3,164 @@ import pandas as pd
 from supabase import create_client, Client
 
 # Configuração da página
-st.set_page_config(page_title="CRUD Clientes Supabase", layout="wide")
+st.set_page_config(page_title="CRUD Clientes - Supabase", layout="wide")
 st.title("👥 Cadastro de Clientes (CRUD)")
 
+# =====================================================================
+# CONEXÃO COM O SUPABASE
+# Em produção, configure estes valores no arquivo .streamlit/secrets.toml
+# =====================================================================
+#SUPABASE_URL = st.secrets.get("SUPABASE_URL", "SUA_SUPABASE_URL_AQUI")
+#SUPABASE_KEY = st.secrets.get("SUPABASE_KEY", "SUA_SUPABASE_ANON_KEY_AQUI")
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
-# -----------------------------------------------------------------------------
-# Conexão com o Supabase
-# -----------------------------------------------------------------------------
+
 @st.cache_resource
 def init_connection():
-    #url = st.secrets["supabase"]["url"]
-    #key = st.secrets["supabase"]["key"]
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
-
-    return create_client(url, key)
+    return create_client(SUPABASE_URL, SUPABASE_KEY)
 
 
 supabase: Client = init_connection()
 
 
-# -----------------------------------------------------------------------------
-# Funções de Banco de Dados
-# -----------------------------------------------------------------------------
-def buscar_estados():
-    res = supabase.table("estados").select("sigla, nome").execute()
-    return pd.DataFrame(res.data)
+# =====================================================================
+# FUNÇÕES DE BUSCA DE DADOS (READ)
+# =====================================================================
+def carregar_estados():
+    response = supabase.table("estado").select("id, sigla, nome").execute()
+    return pd.DataFrame(response.data)
 
 
-def buscar_clientes():
-    res = supabase.table("clientes").select("id, nome, email, estado_sigla").execute()
-    return pd.DataFrame(res.data)
+def carregar_clientes():
+    # Faz um join simples trazendo o nome do estado junto
+    response = supabase.table("cliente").select("id, nome, email, id_estado, estado(sigla)").execute()
+    if response.data:
+        df = pd.DataFrame(response.data)
+        # Formata a coluna de estado para ficar mais visual no dataframe
+        if 'estado' in df.columns:
+            df['uf'] = df['estado'].apply(lambda x: x['sigla'] if isinstance(x, dict) else None)
+            df = df.drop(columns=['estado'])
+        return df
+    return pd.DataFrame(columns=["id", "nome", "email", "id_estado", "uf"])
 
 
-# Carrega os dados das tabelas
-df_estados = buscar_estados()
-lista_estados = df_estados["sigla"].tolist() if not df_estados.empty else []
+# Carrega os dados iniciais
+df_estados = carregar_estados()
+df_clientes = carregar_clientes()
 
-df_clientes = buscar_clientes()
-lista_ids = ["--- Novo Registro ---"] + df_clientes["id"].tolist() if not df_clientes.empty else ["--- Novo Registro ---"]
+# Mapeamento de estados para o selectbox
+opcoes_estado = {f"{row['sigla']} - {row['nome']}": row['id'] for _, row in df_estados.iterrows()}
 
-# -----------------------------------------------------------------------------
-# Layout do Aplicativo
-# -----------------------------------------------------------------------------
-col_form, col_tabela = st.columns([1, 2])
+# =====================================================================
+# GERENCIAMENTO DE ESTADO DA SELEÇÃO (Clique no DataFrame)
+# =====================================================================
+# Usamos o st.session_state para guardar qual cliente está selecionado para edição
+if "cliente_selecionado" not in st.session_state:
+    st.session_state.cliente_selecionado = None
 
-# -----------------------------------------------------------------------------
-# Coluna da Esquerda: FORMULÁRIO (CREATE / UPDATE / DELETE)
-# -----------------------------------------------------------------------------
-with col_form:
-    st.subheader("📝 Formulário do Cliente")
+# Layout em duas colunas: Esquerda (Formulário) | Direita (Tabela/Visualização)
+col_form, col_tabela = st.columns([1, 1.5])
 
-    # SELETOR DE REGISTRO: É este componente que define se criamos ou editamos.
-    # Ele elimina o bug de cliques fantasmas no dataframe que travavam a tela.
-    id_selecionado = st.selectbox("Selecione um ID para Editar/Deletar:", options=lista_ids)
-
-    # Inicializa variáveis base do formulário
-    dados_cliente = None
-    nome_inicial = ""
-    email_inicial = ""
-    estado_inicial = lista_estados[0] if lista_estados else ""
-
-    # Se um ID válido foi selecionado, busca os dados correspondentes no DataFrame carregado
-    if id_selecionado != "--- Novo Registro ---":
-        dados_cliente = df_clientes[df_clientes["id"] == id_selecionado].iloc[0]
-        nome_inicial = str(dados_cliente["nome"])
-        email_inicial = str(dados_cliente["email"])
-        estado_inicial = str(dados_cliente["estado_sigla"])
-        st.info(f"Modo: Editando ID {id_selecionado}")
-    else:
-        st.success("Modo: Criando Novo Registro")
-
-    # Inputs de texto - O uso do 'key' atrelado ao ID reseta o campo se o usuário mudar de ID
-    chave_id = "novo" if id_selecionado == "--- Novo Registro ---" else str(id_selecionado)
-
-    nome_input = st.text_input("Nome", value=nome_inicial, key=f"nome_{chave_id}")
-    email_input = st.text_input("Email", value=email_inicial, key=f"email_{chave_id}")
-
-    # Localiza o índice do estado no selectbox de forma segura
-    try:
-        idx_estado = lista_estados.index(estado_inicial)
-    except ValueError:
-        idx_estado = 0
-
-    estado_input = st.selectbox("Estado", options=lista_estados, index=idx_estado, key=f"estado_{chave_id}")
-
-    # Botões de Operação do CRUD
-    st.write("")
-    col_salvar, col_deletar = st.columns(2)
-
-    with col_salvar:
-        if st.button("💾 Salvar Registro", type="primary", use_container_width=True):
-            if nome_input.strip() and email_input.strip():
-                payload = {
-                    "nome": nome_input,
-                    "email": email_input,
-                    "estado_sigla": estado_input
-                }
-
-                if id_selecionado != "--- Novo Registro ---":
-                    # UPDATE
-                    supabase.table("clientes").update(payload).eq("id", id_selecionado).execute()
-                    st.toast("Cliente atualizado com sucesso!")
-                else:
-                    # CREATE
-                    supabase.table("clientes").insert(payload).execute()
-                    st.toast("Cliente cadastrado com sucesso!")
-
-                st.rerun()
-            else:
-                st.error("Preencha todos os campos obrigatórios.")
-
-    with col_deletar:
-        if id_selecionado != "--- Novo Registro ---":
-            if st.button("❌ Deletar", type="secondary", use_container_width=True):
-                # DELETE
-                supabase.table("clientes").delete().eq("id", id_selecionado).execute()
-                st.toast("Cliente removido do banco de dados!")
-                st.rerun()
-
-# -----------------------------------------------------------------------------
-# Coluna da Direita: DATAFRAME (READ)
-# -----------------------------------------------------------------------------
+# =====================================================================
+# COLUNA DA DIREITA: Visualização e Seleção (Read)
+# =====================================================================
 with col_tabela:
-    st.subheader("📊 Clientes Cadastrados")
-    st.caption("Para editar ou excluir um registro, selecione o ID correspondente no menu lateral.")
+    st.subheader("Clientes Cadastrados")
+    st.caption("Selecione uma linha na tabela para Editar ou Deletar os dados.")
 
-    if not df_clientes.empty:
-        # Exibe o DataFrame de forma estática, apenas para leitura.
-        # Isso impede que cliques acidentais quebrem ou travem a interface.
-        st.dataframe(
-            df_clientes,
-            use_container_width=True,
-            hide_index=True
+    # Configuração do Data Editor para funcionar como seleção de linha única
+    event = st.dataframe(
+        df_clientes[["id", "nome", "email", "uf"]],
+        use_container_width=True,
+        hide_index=True,
+        on_select="rerun",
+        selection_mode="single-row"
+    )
+
+    # Verifica se o usuário clicou/selecionou alguma linha do DataFrame
+    if event and event.get("selection") and event["selection"].get("rows"):
+        index_selecionado = event["selection"]["rows"][0]
+        st.session_state.cliente_selecionado = df_clientes.iloc[index_selecionado].to_dict()
+    elif st.button("🔄 Limpar Seleção / Novo Cadastro"):
+        st.session_state.cliente_selecionado = None
+        st.rerun()
+
+# =====================================================================
+# COLUNA DA ESQUERDA: Formulário de Cadastro (Create / Update / Delete)
+# =====================================================================
+with col_form:
+    st.subheader("Formulário de Cliente")
+
+    # Define se estamos editando ou criando um novo registro
+    cliente_atual = st.session_state.cliente_selecionado
+    modo_edicao = cliente_atual is not None
+
+    # Valores padrão baseados na seleção ou vazios se for um novo cadastro
+    default_nome = cliente_atual["nome"] if modo_edicao else ""
+    default_email = cliente_atual["email"] if modo_edicao else ""
+
+    # Encontra o index correto do estado no selectbox caso esteja editando
+    default_index_estado = 0
+    if modo_edicao and cliente_atual["id_estado"]:
+        for i, id_est in enumerate(opcoes_estado.values()):
+            if id_est == cliente_atual["id_estado"]:
+                default_index_estado = i
+                break
+
+    # Campos do formulário
+    with st.form(key="form_cliente", clear_on_submit=False):
+        input_nome = st.text_input("Nome Completo", value=default_nome)
+        input_email = st.text_input("E-mail", value=default_email)
+
+        input_estado_str = st.selectbox(
+            "Estado (UF)",
+            options=list(opcoes_estado.keys()),
+            index=default_index_estado
         )
-    else:
-        st.info("Nenhum cliente cadastrado no banco de dados.")
+        id_estado_selecionado = opcoes_estado[input_estado_str]
+
+        # Botões de ação dentro do formulário
+        col_btn1, col_btn2 = st.columns(2)
+
+        with col_btn1:
+            if modo_edicao:
+                botao_salvar = st.form_submit_button("💾 Salvar Alterações", use_container_width=True)
+            else:
+                botao_salvar = st.form_submit_button("➕ Cadastrar", use_container_width=True)
+
+        with col_btn2:
+            # Botão de deletar só aparece se um registro existente estiver selecionado
+            botao_deletar = st.form_submit_button("❌ Excluir Cliente", use_container_width=True, type="secondary") if modo_edicao else False
+
+    # =====================================================================
+    # PROCESSAMENTO DAS AÇÕES (CUD)
+    # =====================================================================
+    if botao_salvar:
+        if not input_nome:
+            st.error("O campo Nome é obrigatório!")
+        else:
+            dados_cliente = {
+                "nome": input_nome,
+                "email": input_email,
+                "id_estado": id_estado_selecionado
+            }
+
+            if modo_edicao:
+                # UPDATE
+                supabase.table("cliente").update(dados_cliente).eq("id", cliente_atual["id"]).execute()
+                st.success(f"Cliente '{input_nome}' atualizado com sucesso!")
+            else:
+                # CREATE
+                supabase.table("cliente").insert(dados_cliente).execute()
+                st.success(f"Cliente '{input_nome}' cadastrado com sucesso!")
+
+            st.session_state.cliente_selecionado = None
+            st.rerun()
+
+    if botao_deletar:
+        # DELETE
+        supabase.table("cliente").delete().eq("id", cliente_atual["id"]).execute()
+        st.toast(f"Cliente removido com sucesso!", icon="🗑️")
+        st.session_state.cliente_selecionado = None
+        st.rerun()
