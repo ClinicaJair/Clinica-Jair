@@ -57,6 +57,30 @@ with st.container():
     # Se um cliente foi clicado no dataframe, preenche o formulário
     # (Trata caso o df esteja vazio ou sem seleção)
     default_nome, default_email, default_telefone = "", "", ""
+#****************************************************************
+    # 3. Interface do Streamlit
+    st.title("Exemplo de Combobox com Supabase")
+
+    # Substitua 'sua_tabela' pelo nome da tabela real no seu banco de dados
+    tabela_selecionada = "produtos"
+
+    # Busca os dados
+    dados = obter_dados_tabela(tabela_selecionada)
+
+    if dados:
+        # Suponha que sua tabela tenha uma coluna chamada 'nome' que você quer exibir no combobox
+        opcoes = [linha["nome"] for linha in dados]
+
+        # Cria a combobox (selectbox)
+        # opcao_selecionada = st.selectbox("Seleciona uma opção da tabela:", opcoes)
+        opcao_selecionada = st.selectbox("", opcoes)
+
+        # Exibe a escolha do usuário
+        st.write(f"Você selecionou: {opcao_selecionada}")
+        default_email = opcao_selecionada
+    else:
+        st.warning("Nenhum dado encontrado ou erro na conexão.")
+#***********************************************************************
 
     if st.session_state.selected_customer_id is not None:
         cliente_selecionado = df_clientes[df_clientes['id'] == st.session_state.selected_customer_id]
@@ -64,29 +88,7 @@ with st.container():
             default_nome = cliente_selecionado.iloc[0]['nome']
             default_email = cliente_selecionado.iloc[0]['email']
             default_telefone = cliente_selecionado.iloc[0]['telefone']
-        else:
-            # 3. Interface do Streamlit
-            st.title("Exemplo de Combobox com Supabase")
 
-            # Substitua 'sua_tabela' pelo nome da tabela real no seu banco de dados
-            tabela_selecionada = "produtos"
-
-            # Busca os dados
-            dados = obter_dados_tabela(tabela_selecionada)
-
-            if dados:
-                # Suponha que sua tabela tenha uma coluna chamada 'nome' que você quer exibir no combobox
-                opcoes = [linha["nome"] for linha in dados]
-
-                # Cria a combobox (selectbox)
-                #opcao_selecionada = st.selectbox("Seleciona uma opção da tabela:", opcoes)
-                opcao_selecionada = st.selectbox("", opcoes)
-
-                # Exibe a escolha do usuário
-                st.write(f"Você selecionou: {opcao_selecionada}")
-                default_email = opcao_selecionada
-            else:
-                st.warning("Nenhum dado encontrado ou erro na conexão.")
 
 
     with st.form(key="cliente_form"):
