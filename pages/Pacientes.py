@@ -67,12 +67,14 @@ with st.container():
     st.title("Exemplo de Combobox com Supabase")
 
     # Substitua 'sua_tabela' pelo nome da tabela real no seu banco de dados
-    tabela_selecionada = "estados"
+    #tabela_selecionada = "estados"
 
     # Busca os dados
-    dados1 = obter_estados(tabela_selecionada)
+    #dados1 = obter_estados(tabela_selecionada)
+    dados1 = response_estado = supabase.table("estados").select("*").execute()
+    dados2 = dados1.data
 
-    if dados1:
+    if dados2:
         # Suponha que sua tabela tenha uma coluna chamada 'nome' que você quer exibir no combobox
         opcoes = [linha["nome"] for linha in dados1]
 
