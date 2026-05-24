@@ -71,10 +71,10 @@ with st.container():
 
     # Busca os dados
     #dados1 = obter_estados(tabela_selecionada)
-    dados1 = response_estado = supabase.table("estados").select("*").execute()
-    dados2 = dados1.data
+    response_estado = supabase.table("estados").select("*").execute()
+    dados1 = response_estado.data
 
-    if dados2:
+    if dados1:
         # Suponha que sua tabela tenha uma coluna chamada 'nome' que você quer exibir no combobox
         opcoes = [linha["nome"] for linha in dados1]
 
