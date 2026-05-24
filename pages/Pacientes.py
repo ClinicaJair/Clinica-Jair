@@ -39,10 +39,10 @@ def obter_dados_tabela(clientes):
     response = supabase.table(clientes).select("*").execute()
     return response.data
 
-def obter_estados(estados):
-    # Executa um SELECT * na tabela desejada
-    response_estado = supabase.table(estados).select("*").execute()
-    return response_estado.data
+#def obter_estados(estados):
+#    # Executa um SELECT * na tabela desejada
+#    response_estado = supabase.table(estados).select("*").execute()
+#    return response_estado.data
 
 
 # 3. Layout da Interface (Formulário e DataFrame)
