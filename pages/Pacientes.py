@@ -74,7 +74,7 @@ with st.container():
 
     if dados1:
         # Suponha que sua tabela tenha uma coluna chamada 'nome' que você quer exibir no combobox
-        opcoes = [linha["nome"] for linha in dados]
+        opcoes = [linha["nome"] for linha in dados1]
 
         # Cria a combobox (selectbox)
         # opcao_selecionada = st.selectbox("Seleciona uma opção da tabela:", opcoes)
