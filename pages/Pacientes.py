@@ -12,9 +12,7 @@ SUPABASE_KEY = "sb_publishable_2dK9DdBevblDyz5ZhYtyaQ_6E0woJsZ"
 def init_supabase():
     return create_client(SUPABASE_URL, SUPABASE_KEY)
 
-
 supabase = init_supabase()
-
 
 # 2. Funções do Banco de Dados (CRUD)
 def read_customers():
@@ -66,7 +64,7 @@ with st.container():
             default_nome = cliente_selecionado.iloc[0]['nome']
             default_email = cliente_selecionado.iloc[0]['email']
             default_telefone = cliente_selecionado.iloc[0]['telefone']
-        else
+        else:
             # 3. Interface do Streamlit
             st.title("Exemplo de Combobox com Supabase")
 
