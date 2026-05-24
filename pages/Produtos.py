@@ -12,8 +12,11 @@ st.title("👥 Cadastro de Clientes (CRUD)")
 # -----------------------------------------------------------------------------
 @st.cache_resource
 def init_connection():
-    url = st.secrets["supabase"]["url"]
-    key = st.secrets["supabase"]["key"]
+    #url = st.secrets["supabase"]["url"]
+    #key = st.secrets["supabase"]["key"]
+    url = st.secrets["SUPABASE_URL"]
+    key = st.secrets["SUPABASE_KEY"]
+
     return create_client(url, key)
 
 
