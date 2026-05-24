@@ -19,16 +19,13 @@ def read_customers():
     response = supabase.table("clientes").select("*").execute()
     return pd.DataFrame(response.data)
 
-
 def create_customer(nome, email, telefone):
     supabase.table("clientes").insert({"id": codigo, "nome": nome, "email": email, "telefone": telefone, "estado": estado}).execute()
     st.success("Cliente cadastrado com sucesso!")
 
-
 def update_customer(cliente_id, nome, email, telefone):
     supabase.table("clientes").update({"id": codigo, "nome": nome, "email": email, "telefone": telefone, "estado": estado}).eq("id", cliente_id).execute()
     st.success("Cliente atualizado com sucesso!")
-
 
 def delete_customer(cliente_id):
     supabase.table("clientes").delete().eq("id", cliente_id).execute()
@@ -38,11 +35,6 @@ def obter_dados_tabela(clientes):
     # Executa um SELECT * na tabela desejada
     response = supabase.table(clientes).select("*").execute()
     return response.data
-
-#def obter_estados(estados):
-#    # Executa um SELECT * na tabela desejada
-#    response_estado = supabase.table(estados).select("*").execute()
-#    return response_estado.data
 
 
 # 3. Layout da Interface (Formulário e DataFrame)
@@ -62,32 +54,6 @@ with st.container():
     # Se um cliente foi clicado no dataframe, preenche o formulário
     # (Trata caso o df esteja vazio ou sem seleção)
     default_nome, default_email, default_telefone = "", "", ""
-#****************************************************************
-    # 3. Interface do Streamlit
-    st.title("Exemplo de Combobox com Supabase")
-
-    # Substitua 'sua_tabela' pelo nome da tabela real no seu banco de dados
-    #tabela_selecionada = "estados"
-
-    # Busca os dados
-    #dados1 = obter_estados(tabela_selecionada)
-    response_estado = supabase.table("estados").select("*").execute()
-    dados1 = response_estado.data
-
-    if dados1:
-        # Suponha que sua tabela tenha uma coluna chamada 'nome' que você quer exibir no combobox
-        opcoes = [linha["nome"] for linha in dados1]
-
-        # Cria a combobox (selectbox)
-        # opcao_selecionada = st.selectbox("Seleciona uma opção da tabela:", opcoes)
-        opcao_selecionada = st.selectbox("", opcoes)
-
-        # Exibe a escolha do usuário
-        st.write(f"Você selecionou: {opcao_selecionada}")
-        default_email = opcao_selecionada
-    else:
-        st.warning("Nenhum dado encontrado ou erro na conexão.")
-#***********************************************************************
 
     if st.session_state.selected_customer_id is not None:
         cliente_selecionado = df_clientes[df_clientes['id'] == st.session_state.selected_customer_id]
@@ -95,7 +61,6 @@ with st.container():
             default_nome = cliente_selecionado.iloc[0]['nome']
             default_email = cliente_selecionado.iloc[0]['email']
             default_telefone = cliente_selecionado.iloc[0]['telefone']
-
 
 
     with st.form(key="cliente_form"):
@@ -148,16 +113,16 @@ if termo_busca:
         if dados:
             # Exibe os resultados em formato de tabela interativa
             df_clientes = pd.DataFrame(dados)
-            #event = st.dataframe(
-            #    df_clientes,
-            #    use_container_width = True,
-            #    hide_index = True,
-            #    on_select = "rerun",
-            #    selection_mode = "single-row"
-            #)
+            event = st.dataframe(
+                df_clientes,
+                use_container_width = True,
+                hide_index = True,
+                on_select = "rerun",
+                selection_mode = "single-row"
+            )
 
-        #else:
-            #st.warning("Nenhum registro encontrado para este termo.")
+        else:
+            st.warning("Nenhum registro encontrado para este termo.")
 
     except Exception as e:
         st.error(f"Erro ao consultar o banco de dados: {e}")
