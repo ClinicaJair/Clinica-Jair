@@ -190,22 +190,22 @@ if submit2:
 #st.dataframe(response.data)
 
 # Aba 2: Exibição dos dados e Seleção Interativa
-st.subheader("Lista de Clientes")
+#st.subheader("Lista de Clientes")
 #df_clientes = get_clinicas()
 
-if not df_clientes.empty:
+#if not df_clientes.empty:
     # Seleção nativa de linhas do Streamlit (on_select="rerun" para atualizar a tela)
-    event = st.dataframe(
-        df_clientes,
-        use_container_width=True,
-        hide_index=True,
-        on_select="rerun",
-        selection_mode="single-row"
-    )
+#    event = st.dataframe(
+#        df_clientes,
+#        use_container_width=True,
+#        hide_index=True,
+#        on_select="rerun",
+#        selection_mode="single-row"
+#    )
 
     # Ao clicar em uma linha, atualiza o session_state e recarrega a tela
-    if event.selection.rows:
-        selected_index = event.selection.rows[0]
-        st.session_state.selected_customer_id = df_clientes.iloc[selected_index]['id']
-else:
-    st.info("Nenhum cliente cadastrado ainda.")
+#    if event.selection.rows:
+#        selected_index = event.selection.rows[0]
+#        st.session_state.selected_customer_id = df_clientes.iloc[selected_index]['id']
+#else:
+#    st.info("Nenhum cliente cadastrado ainda.")
