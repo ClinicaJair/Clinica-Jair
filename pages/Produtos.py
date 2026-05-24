@@ -5,6 +5,9 @@ import pandas as pd
 # Configuração da sua conexão com o Supabase
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+#SUPABASE_URL = st.secrets["SUPABASE_URL"]
+#SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 st.set_page_config(page_title="CRUD de Clientes", layout="wide")
