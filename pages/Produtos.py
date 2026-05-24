@@ -12,11 +12,8 @@ st.title("👥 Cadastro de Clientes (CRUD)")
 # -----------------------------------------------------------------------------
 @st.cache_resource
 def init_connection():
-    #url = st.secrets["supabase"]["url"]
-    #key = st.secrets["supabase"]["key"]
-    url = st.secrets["SUPABASE_URL"]
-    key = st.secrets["SUPABASE_KEY"]
-
+    url = st.secrets["supabase"]["url"]
+    key = st.secrets["supabase"]["key"]
     return create_client(url, key)
 
 
@@ -27,21 +24,29 @@ supabase: Client = init_connection()
 # Funções de Banco de Dados
 # -----------------------------------------------------------------------------
 def buscar_estados():
-    res = supabase.table("estados").select("sigla, nome").execute()
-    return pd.DataFrame(res.data)
+    try:
+        res = supabase.table("estados").select("sigla, nome").execute()
+        return pd.DataFrame(res.data)
+    except Exception as e:
+        st.error(f"Erro ao buscar estados: {e}")
+        return pd.DataFrame(columns=["sigla", "nome"])
 
 
 def buscar_clientes():
-    res = supabase.table("clientes").select("id, nome, email, estado_sigla").execute()
-    return pd.DataFrame(res.data)
+    try:
+        res = supabase.table("clientes").select("id, nome, email, estado_sigla").execute()
+        return pd.DataFrame(res.data)
+    except Exception as e:
+        st.error(f"Erro ao buscar clientes: {e}")
+        return pd.DataFrame(columns=["id", "nome", "email", "estado_sigla"])
 
 
-# Carrega os estados do banco
+# Carrega dados iniciais do banco
 df_estados = buscar_estados()
 lista_estados = df_estados["sigla"].tolist() if not df_estados.empty else []
 
 # -----------------------------------------------------------------------------
-# Inicialização das variáveis de controle (Session State)
+# Inicialização das Variáveis de Controle de Estado (Session State)
 # -----------------------------------------------------------------------------
 if "id_selecionado" not in st.session_state:
     st.session_state.id_selecionado = None
@@ -53,26 +58,21 @@ if "val_estado" not in st.session_state:
     st.session_state.val_estado = lista_estados[0] if lista_estados else ""
 
 # -----------------------------------------------------------------------------
-# Lógica de Captura do Clique no DataFrame (Processado ANTES de desenhar a tela)
+# Layout de Duas Colunas
 # -----------------------------------------------------------------------------
-df_clientes = buscar_clientes()
-
-# Criamos uma coluna visível de seleção para facilitar o clique do usuário
-if not df_clientes.empty:
-    # Captura se o usuário selecionou uma linha na tabela lateral
-    col1, col2 = st.columns([1, 2])
-else:
-    col1, col2 = st.columns([1, 2])
+col_form, col_tabela = st.columns([1, 2])
 
 # -----------------------------------------------------------------------------
-# Coluna da Direita: Exibição da Tabela (READ) primeiro para capturar o clique
+# Coluna da Direita: DATAFRAME (READ) - Processado primeiro para capturar o clique
 # -----------------------------------------------------------------------------
-with col2:
+with col_tabela:
     st.subheader("📊 Clientes Cadastrados")
-    st.caption("Marque a caixa de seleção na linha desejada para carregar os dados no formulário:")
+    st.caption("Clique na linha ou use a caixa de seleção para editar o registro:")
+
+    df_clientes = buscar_clientes()
 
     if not df_clientes.empty:
-        # st.dataframe configurado com seleção de linhas ativa
+        # Configuração estável e testada para captura de clique
         tabela_interativa = st.dataframe(
             df_clientes,
             use_container_width=True,
@@ -81,26 +81,27 @@ with col2:
             selection_mode="single-row"
         )
 
-        # Verifica se alguma linha foi marcada
-        selecionados = tabela_interativa.get("selection", {}).get("rows", [])
-        if selecionados:
-            idx_linha = selecionados[0]
+        # Captura exata da linha selecionada
+        selecao = tabela_interativa.get("selection", {}).get("rows", [])
+        if selecao:
+            idx_linha = selecao[0]
             linha_dados = df_clientes.iloc[idx_linha]
+            id_clicado = int(linha_dados["id"])
 
-            # Atualiza o estado se for um ID diferente do atual na memória
-            if st.session_state.id_selecionado != int(linha_dados["id"]):
-                st.session_state.id_selecionado = int(linha_dados["id"])
+            # Executa apenas se o clique for em um ID diferente do atual em memória
+            if st.session_state.id_selecionado != id_clicado:
+                st.session_state.id_selecionado = id_clicado
                 st.session_state.val_nome = str(linha_dados["nome"])
                 st.session_state.val_email = str(linha_dados["email"])
                 st.session_state.val_estado = str(linha_dados["estado_sigla"])
                 st.rerun()
     else:
-        st.info("Nenhum cliente cadastrado no banco de dados.")
+        st.info("Nenhum cliente encontrado no banco de dados.")
 
 # -----------------------------------------------------------------------------
-# Coluna da Esquerda: Formulário Protegido (CREATE / UPDATE / DELETE)
+# Coluna da Esquerda: FORMULÁRIO (CREATE / UPDATE / DELETE)
 # -----------------------------------------------------------------------------
-with col1:
+with col_form:
     st.subheader("📝 Formulário do Cliente")
 
     if st.session_state.id_selecionado:
@@ -108,55 +109,63 @@ with col1:
     else:
         st.success("Modo: Criando Novo Registro")
 
-    # Isolamos os inputs em um st.form. Isso destrava os campos completamente!
-    with st.form("form_cliente", clear_on_submit=False):
-        nome = st.text_input("Nome", value=st.session_state.val_nome)
-        email = st.text_input("Email", value=st.session_state.val_email)
+    # Truque do sufixo na Key: se mudamos de ID, o componente reseta visualmente.
+    # Se mantemos o ID, ele permite digitação e seleção livre sem travar.
+    sufixo_key = f"_{st.session_state.id_selecionado}" if st.session_state.id_selecionado else "_novo"
 
-        # Define o índice correto do selectbox baseado no estado atual da memória
-        try:
-            idx_estado = lista_estados.index(st.session_state.val_estado)
-        except ValueError:
-            idx_estado = 0
+    nome_input = st.text_input("Nome", value=st.session_state.val_nome, key=f"nome{sufixo_key}")
+    email_input = st.text_input("Email", value=st.session_state.val_email, key=f"email{sufixo_key}")
 
-        estado = st.selectbox("Estado", options=lista_estados, index=idx_estado)
+    # Tratamento do index do selectbox baseado no banco
+    try:
+        idx_estado = lista_estados.index(st.session_state.val_estado)
+    except ValueError:
+        idx_estado = 0
 
-        # Botão principal de envio dentro do formulário
-        btn_salvar = st.form_submit_button("💾 Gravar / Salvar Dados", type="primary", use_container_width=True)
+    estado_input = st.selectbox(
+        "Estado",
+        options=lista_estados,
+        index=idx_estado,
+        key=f"estado{sufixo_key}"
+    )
 
-    # Lógica de salvar executada após o envio do form
-    if btn_salvar:
-        if nome.strip() and email.strip():
-            dados_enviar = {"nome": nome, "email": email, "estado_sigla": estado}
-
-            if st.session_state.id_selecionado:
-                # UPDATE
-                supabase.table("clientes").update(dados_enviar).eq("id", st.session_state.id_selecionado).execute()
-                st.toast("Registro atualizado com sucesso!")
-            else:
-                # CREATE
-                supabase.table("clientes").insert(dados_enviar).execute()
-                st.toast("Registro criado com sucesso!")
-
-            # Limpa o formulário e recarrega
-            st.session_state.id_selecionado = None
-            st.session_state.val_nome = ""
-            st.session_state.val_email = ""
-            st.session_state.val_estado = lista_estados[0] if lista_estados else ""
-            st.rerun()
-        else:
-            st.error("Por favor, preencha o Nome e o Email do cliente.")
-
-    # Botões de Deletar e Limpar ficam fora do formulário por questões de layout e funcionamento
+    # Botões de Operação do CRUD
     st.write("")
-    col_d, col_l = st.columns(2)
+    col_salvar, col_deletar, col_limpar = st.columns(3)
 
-    with col_d:
+    with col_salvar:
+        if st.button("💾 Salvar", type="primary", use_container_width=True):
+            if nome_input.strip() and email_input.strip():
+                dados_payload = {
+                    "nome": nome_input,
+                    "email": email_input,
+                    "estado_sigla": estado_input
+                }
+
+                if st.session_state.id_selecionado:
+                    # UPDATE
+                    supabase.table("clientes").update(dados_payload).eq("id", st.session_state.id_selecionado).execute()
+                    st.toast("Cliente atualizado!")
+                else:
+                    # CREATE
+                    supabase.table("clientes").insert(dados_payload).execute()
+                    st.toast("Cliente cadastrado!")
+
+                # Reseta o estado da tela
+                st.session_state.id_selecionado = None
+                st.session_state.val_nome = ""
+                st.session_state.val_email = ""
+                st.session_state.val_estado = lista_estados[0] if lista_estados else ""
+                st.rerun()
+            else:
+                st.error("Preencha Nome e Email!")
+
+    with col_deletar:
         if st.session_state.id_selecionado:
-            if st.button("❌ Deletar Registro", type="secondary", use_container_width=True):
+            if st.button("❌ Deletar", type="secondary", use_container_width=True):
                 # DELETE
                 supabase.table("clientes").delete().eq("id", st.session_state.id_selecionado).execute()
-                st.toast("Registro deletado com sucesso!")
+                st.toast("Cliente removido!")
 
                 st.session_state.id_selecionado = None
                 st.session_state.val_nome = ""
@@ -164,8 +173,8 @@ with col1:
                 st.session_state.val_estado = lista_estados[0] if lista_estados else ""
                 st.rerun()
 
-    with col_l:
-        if st.button("🧹 Limpar / Novo", use_container_width=True):
+    with col_limpar:
+        if st.button("🧹 Limpar", use_container_width=True):
             st.session_state.id_selecionado = None
             st.session_state.val_nome = ""
             st.session_state.val_email = ""
