@@ -36,6 +36,11 @@ def delete_customer(cliente_id):
     supabase.table("clientes").delete().eq("id", cliente_id).execute()
     st.success("Cliente deletado com sucesso!")
 
+def obter_dados_tabela(clientes):
+    # Executa um SELECT * na tabela desejada
+    response = supabase.table(clientes).select("*").execute()
+    return response.data
+
 
 # 3. Layout da Interface (Formulário e DataFrame)
 st.title("Cadastro de Clientes - CRUD Supabase")
@@ -61,6 +66,30 @@ with st.container():
             default_nome = cliente_selecionado.iloc[0]['nome']
             default_email = cliente_selecionado.iloc[0]['email']
             default_telefone = cliente_selecionado.iloc[0]['telefone']
+
+        # 3. Interface do Streamlit
+        st.title("Exemplo de Combobox com Supabase")
+
+        # Substitua 'sua_tabela' pelo nome da tabela real no seu banco de dados
+        tabela_selecionada = "produtos"
+
+        # Busca os dados
+        dados = obter_dados_tabela(tabela_selecionada)
+
+        if dados:
+            # Suponha que sua tabela tenha uma coluna chamada 'nome' que você quer exibir no combobox
+            opcoes = [linha["nome"] for linha in dados]
+
+            # Cria a combobox (selectbox)
+            #opcao_selecionada = st.selectbox("Seleciona uma opção da tabela:", opcoes)
+            opcao_selecionada = st.selectbox("", opcoes)
+
+            # Exibe a escolha do usuário
+            st.write(f"Você selecionou: {opcao_selecionada}")
+            default_email = opcao_selecionada
+        else:
+            st.warning("Nenhum dado encontrado ou erro na conexão.")
+
 
     with st.form(key="cliente_form"):
         nome = st.text_input("Nome", value=default_nome)
