@@ -16,6 +16,7 @@ def init_connection():
     #key = st.secrets["supabase"]["key"]
     url = st.secrets["SUPABASE_URL"]
     key = st.secrets["SUPABASE_KEY"]
+
     return create_client(url, key)
 
 
@@ -42,22 +43,23 @@ lista_estados = df_estados["sigla"].tolist() if not df_estados.empty else []
 # -----------------------------------------------------------------------------
 # Inicialização do Estado da Tela (Session State)
 # -----------------------------------------------------------------------------
-if "cliente_id" not in st.session_state:
-    st.session_state.cliente_id = None
-if "nome_input" not in st.session_state:
-    st.session_state.nome_input = ""
-if "email_input" not in st.session_state:
-    st.session_state.email_input = ""
-if "estado_input" not in st.session_state:
-    st.session_state.estado_input = lista_estados[0] if lista_estados else ""
+# Criamos as chaves que os próprios inputs usarão diretamente como 'key'
+if "id_cliente" not in st.session_state:
+    st.session_state.id_cliente = None
+if "txt_nome" not in st.session_state:
+    st.session_state.txt_nome = ""
+if "txt_email" not in st.session_state:
+    st.session_state.txt_email = ""
+if "sb_estado" not in st.session_state:
+    st.session_state.sb_estado = lista_estados[0] if lista_estados else ""
 
 
-# -----------------------------------------------------------------------------
-# Callbacks para atualizar o estado sem travar a UI
-# -----------------------------------------------------------------------------
-def atualizar_estado_selecionado():
-    # Sincroniza o valor escolhido no selectbox de volta para a nossa variável de controle
-    st.session_state.estado_input = st.session_state.sb_estado
+# Função para limpar o formulário
+def limpar_formulario():
+    st.session_state.id_cliente = None
+    st.session_state.txt_nome = ""
+    st.session_state.txt_email = ""
+    st.session_state.sb_estado = lista_estados[0] if lista_estados else ""
 
 
 # -----------------------------------------------------------------------------
@@ -69,29 +71,16 @@ with col_form:
     st.subheader("📝 Formulário do Cliente")
 
     # Identifica se estamos editando ou criando
-    if st.session_state.cliente_id:
-        st.info(f"Editando Cliente ID: {st.session_state.cliente_id}")
+    if st.session_state.id_cliente:
+        st.info(f"Editando Cliente ID: {st.session_state.id_cliente}")
     else:
         st.success("Criando Novo Cliente")
 
-    # Inputs de texto vinculados ao session_state via variável
-    nome = st.text_input("Nome", value=st.session_state.nome_input)
-    email = st.text_input("Email", value=st.session_state.email_input)
-
-    # Tratamento do índice do Selectbox
-    if st.session_state.estado_input in lista_estados:
-        idx_estado = lista_estados.index(st.session_state.estado_input)
-    else:
-        idx_estado = 0
-
-    # O segredo: usamos o 'key' e o 'on_change' para processar a mudança imediatamente
-    estado = st.selectbox(
-        "Estado",
-        options=lista_estados,
-        index=idx_estado,
-        key="sb_estado",
-        on_change=atualizar_estado_selecionado
-    )
+    # ATENÇÃO: Vinculamos direto usando 'key'. Não usamos o parâmetro 'value'.
+    # Isso destrava os campos completamente para digitação e seleção livre.
+    nome = st.text_input("Nome", key="txt_nome")
+    email = st.text_input("Email", key="txt_email")
+    estado = st.selectbox("Estado", options=lista_estados, key="sb_estado")
 
     # Botões de Ação (C, U, D)
     col_btn1, col_btn2, col_btn3 = st.columns(3)
@@ -99,46 +88,34 @@ with col_form:
     with col_btn1:
         if st.button("Salvar / Gravar", type="primary", use_container_width=True):
             if nome and email:
-                dados = {"nome": nome, "email": email, "estado_sigla": st.session_state.estado_input}
+                dados = {"nome": nome, "email": email, "estado_sigla": estado}
 
-                if st.session_state.cliente_id:
+                if st.session_state.id_cliente:
                     # UPDATE
-                    supabase.table("clientes").update(dados).eq("id", st.session_state.cliente_id).execute()
+                    supabase.table("clientes").update(dados).eq("id", st.session_state.id_cliente).execute()
                     st.toast("Cliente atualizado com sucesso!")
                 else:
                     # CREATE
                     supabase.table("clientes").insert(dados).execute()
                     st.toast("Cliente cadastrado com sucesso!")
 
-                # Reseta tudo após salvar
-                st.session_state.cliente_id = None
-                st.session_state.nome_input = ""
-                st.session_state.email_input = ""
-                st.session_state.estado_input = lista_estados[0] if lista_estados else ""
+                limpar_formulario()
                 st.rerun()
             else:
                 st.error("Preencha Nome e Email!")
 
     with col_btn2:
-        if st.session_state.cliente_id:
+        if st.session_state.id_cliente:
             if st.button("❌ Deletar", type="secondary", use_container_width=True):
                 # DELETE
-                supabase.table("clientes").delete().eq("id", st.session_state.cliente_id).execute()
+                supabase.table("clientes").delete().eq("id", st.session_state.id_cliente).execute()
                 st.toast("Cliente removido!")
-
-                # Reseta o formulário
-                st.session_state.cliente_id = None
-                st.session_state.nome_input = ""
-                st.session_state.email_input = ""
-                st.session_state.estado_input = lista_estados[0] if lista_estados else ""
+                limpar_formulario()
                 st.rerun()
 
     with col_btn3:
         if st.button("Limpar", use_container_width=True):
-            st.session_state.cliente_id = None
-            st.session_state.nome_input = ""
-            st.session_state.email_input = ""
-            st.session_state.estado_input = lista_estados[0] if lista_estados else ""
+            limpar_formulario()
             st.rerun()
 
 with col_tabela:
@@ -156,17 +133,17 @@ with col_tabela:
             selection_mode="single-row"
         )
 
-        # Verifica se o usuário selecionou uma nova linha na tabela
+        # Verifica se o usuário selecionou uma linha na tabela
         if evento_selecao and "rows" in evento_selecao["selection"] and len(evento_selecao["selection"]["rows"]) > 0:
             idx_linha_clicada = evento_selecao["selection"]["rows"][0]
             dados_cliente = df_clientes.iloc[idx_linha_clicada]
 
-            # Atualiza o formulário apenas se mudou o ID selecionado
-            if st.session_state.cliente_id != int(dados_cliente["id"]):
-                st.session_state.cliente_id = int(dados_cliente["id"])
-                st.session_state.nome_input = str(dados_cliente["nome"])
-                st.session_state.email_input = str(dados_cliente["email"])
-                st.session_state.estado_input = str(dados_cliente["estado_sigla"])
+            # Força a atualização do formulário APENAS se o ID clicado for diferente do atual
+            if st.session_state.id_cliente != int(dados_cliente["id"]):
+                st.session_state.id_cliente = int(dados_cliente["id"])
+                st.session_state.txt_nome = str(dados_cliente["nome"])
+                st.session_state.txt_email = str(dados_cliente["email"])
+                st.session_state.sb_estado = str(dados_cliente["estado_sigla"])
                 st.rerun()
     else:
         st.info("Nenhum cliente cadastrado ainda.")
