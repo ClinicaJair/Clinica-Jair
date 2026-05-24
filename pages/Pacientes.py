@@ -67,28 +67,28 @@ with st.container():
             default_email = cliente_selecionado.iloc[0]['email']
             default_telefone = cliente_selecionado.iloc[0]['telefone']
 
-        # 3. Interface do Streamlit
-        st.title("Exemplo de Combobox com Supabase")
+    # 3. Interface do Streamlit
+    st.title("Exemplo de Combobox com Supabase")
 
-        # Substitua 'sua_tabela' pelo nome da tabela real no seu banco de dados
-        tabela_selecionada = "produtos"
+    # Substitua 'sua_tabela' pelo nome da tabela real no seu banco de dados
+    tabela_selecionada = "produtos"
 
-        # Busca os dados
-        dados = obter_dados_tabela(tabela_selecionada)
+    # Busca os dados
+    dados = obter_dados_tabela(tabela_selecionada)
 
-        if dados:
-            # Suponha que sua tabela tenha uma coluna chamada 'nome' que você quer exibir no combobox
-            opcoes = [linha["nome"] for linha in dados]
+    if dados:
+        # Suponha que sua tabela tenha uma coluna chamada 'nome' que você quer exibir no combobox
+        opcoes = [linha["nome"] for linha in dados]
 
-            # Cria a combobox (selectbox)
-            #opcao_selecionada = st.selectbox("Seleciona uma opção da tabela:", opcoes)
-            opcao_selecionada = st.selectbox("", opcoes)
+        # Cria a combobox (selectbox)
+        #opcao_selecionada = st.selectbox("Seleciona uma opção da tabela:", opcoes)
+        opcao_selecionada = st.selectbox("", opcoes)
 
-            # Exibe a escolha do usuário
-            st.write(f"Você selecionou: {opcao_selecionada}")
-            default_email = opcao_selecionada
-        else:
-            st.warning("Nenhum dado encontrado ou erro na conexão.")
+        # Exibe a escolha do usuário
+        st.write(f"Você selecionou: {opcao_selecionada}")
+        default_email = opcao_selecionada
+    else:
+        st.warning("Nenhum dado encontrado ou erro na conexão.")
 
 
     with st.form(key="cliente_form"):
