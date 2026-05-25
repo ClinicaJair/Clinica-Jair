@@ -123,10 +123,12 @@ with st.form("form_clinica"):
         email = st.text_input("E-mail")
 
     with col15:
-        site = st.text_input("Site") 
+        site = st.text_input("Site")
 
     with col16:
         instagram = st.text_input("Instagram")
+
+    st.write("")
 
     # 3. Coloca o botão de submit lado a lado com um botão de cancelar
     btn_gravar, btn_editar, btn_deletar, btn_cancelar = st.columns([2, 2, 2, 2])
