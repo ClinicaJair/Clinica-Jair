@@ -143,19 +143,19 @@ with st.form("form_clinica"):
         # Botão de envio (Submit)
         #btn_create = st.form_submit_button("Cadastrar (Create)")
         #submit_gravar = st.form_submit_button(label='Salvar')
-        btn_editar = st.form_submit_button("➕ Gravar")
+        btn_editar = st.form_submit_button("➕ Gravar1")
 
     with col_deletar:
         # Botão de envio (Submit)
         #btn_create = st.form_submit_button("Cadastrar (Create)")
         #submit_gravar = st.form_submit_button(label='Salvar')
-        btn_deletar = st.form_submit_button("➕ Gravar")
+        btn_deletar = st.form_submit_button("➕ Gravar2")
 
     with col_cancelar:
         # Botão de envio (Submit)
         #btn_create = st.form_submit_button("Cadastrar (Create)")
         #submit_gravar = st.form_submit_button(label='Salvar')
-        btn_cancelar = st.form_submit_button("➕ Gravar")
+        btn_cancelar = st.form_submit_button("➕ Gravar3")
 
 if btn_gravar:
     if razao:
