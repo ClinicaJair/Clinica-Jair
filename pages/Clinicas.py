@@ -1,5 +1,6 @@
 import streamlit as st
 from supabase import create_client
+import pandas as pd
 
 # Conexão Supabase
 url = st.secrets["SUPABASE_URL"]
@@ -24,26 +25,44 @@ st.markdown("""
 
 #******************
 # 3. Funções do Banco de Dados (CRUD)
-def create_customer(nome, email, telefone):
-    supabase.table("clientes").insert({"nome": nome, "email": email, "telefone": telefone}).execute()
-    st.success("Cliente cadastrado com sucesso!")
+#def create_customer(nome, email, telefone):
+#    supabase.table("clientes").insert({"nome": nome, "email": email, "telefone": telefone}).execute()
+#    st.success("Cliente cadastrado com sucesso!")
 
-def read_customers():
+#def read_customers():
+#    response = supabase.table("clientes").select("*").execute()
+#    return pd.DataFrame(response.data)
+
+#def update_customer(cliente_id, nome, email, telefone):
+#    supabase.table("clientes").update({"nome": nome, "email": email, "telefone": telefone}).eq("id", cliente_id).execute()
+#    st.success("Cliente atualizado com sucesso!")
+
+#def delete_customer(cliente_id):
+#    supabase.table("clientes").delete().eq("id", cliente_id).execute()
+#    st.success("Cliente deletado com sucesso!")
+
+#def obter_dados_tabela(clientes):
+#    # Executa um SELECT * na tabela desejada
+#    response = supabase.table(clientes).select("*").execute()
+#    return response.data
+
+def ler_clientes():
     response = supabase.table("clientes").select("*").execute()
-    return pd.DataFrame(response.data)
+    return pd.DataFrame(response.data) if response.data else pd.DataFrame()
 
-def update_customer(cliente_id, nome, email, telefone):
-    supabase.table("clientes").update({"nome": nome, "email": email, "telefone": telefone}).eq("id", cliente_id).execute()
-    st.success("Cliente atualizado com sucesso!")
+def cadastrar_cliente(nome, email, telefone):
+    data = {"nome": nome, "email": email, "telefone": telefone}
+    supabase.table("clientes").insert(data).execute()
+    #st.success("Cliente cadastrado com sucesso!")
 
-def delete_customer(cliente_id):
-    supabase.table("clientes").delete().eq("id", cliente_id).execute()
-    st.success("Cliente deletado com sucesso!")
+def atualizar_cliente(id_cliente, nome, email, telefone):
+    data = {"nome": nome, "email": email, "telefone": telefone}
+    supabase.table("clientes").update(data).eq("id", id_cliente).execute()
+    #st.success("Cliente atualizado com sucesso!")
 
-def obter_dados_tabela(clientes):
-    # Executa um SELECT * na tabela desejada
-    response = supabase.table(clientes).select("*").execute()
-    return response.data
+def deletar_cliente(id_cliente):
+    supabase.table("clientes").delete().eq("id", id_cliente).execute()
+    #st.success("Cliente deletado com sucesso!")
 
 #******************
 
@@ -79,8 +98,6 @@ with st.form("form_clinica"):
     with col6:
         inscricao = st.text_input("Inscrição Estadual")
 
-    #st.divider()
-
     with col7:
         cep = st.text_input("CEP")
 
@@ -95,27 +112,6 @@ with st.form("form_clinica"):
 
     with col11:
         estado = st.text_input("Estado")
-        # 3. Interface do Streamlit
-        #st.title("Exemplo de Combobox com Supabase")
-
-        # Substitua 'sua_tabela' pelo nome da tabela real no seu banco de dados
-        #tabela_selecionada = "clientes"
-
-        # Busca os dados
-        #dados = obter_dados_tabela(tabela_selecionada)
-
-        #if dados:
-            # Suponha que sua tabela tenha uma coluna chamada 'nome' que você quer exibir no combobox
-            #opcoes = [linha["nome"] for linha in dados]
-
-            # Cria a combobox (selectbox)
-            #opcao_selecionada = st.selectbox("Seleciona uma opção da tabela:", opcoes)
-            #opcao_selecionada = st.selectbox("", opcoes)
-
-            # Exibe a escolha do usuário
-            #st.write(f"Você selecionou: {opcao_selecionada}")
-        #else:
-            #st.warning("Nenhum dado encontrado ou erro na conexão.")
 
     with col12:
         telefone = st.text_input("Telefone")
@@ -133,56 +129,69 @@ with st.form("form_clinica"):
         instagram = st.text_input("Instagram")
 
     # 3. Coloca o botão de submit lado a lado com um botão de cancelar
-    col_btn1, col_btn2, col_btn3 = st.columns([2, 2, 2])
+    btn_gravar, btn_editar, btn_deletar, btn_cancelar = st.columns([2, 2, 2, 2])
 
-    with col_btn1:
+    with btn_gravar:
         # Botão de envio (Submit)
-        submit = st.form_submit_button(label='Salvar')
-    with col_btn2:
+        #submit_gravar = st.form_submit_button(label='Salvar')
+        if st.button("➕ Gravar"):
+            if razao:
+                try:
+                    supabase.table("clinicas").insert({"codigo": codigo, "razao": razao, "fantasia": fantasia, "endereco": endereco,
+                                                       "cep": cep, "bairro": bairro, "cidade": cidade, "estado": estado,
+                                                       "telefone": telefone,
+                                                       "telefone1": telefone1, "cnpj": cnpj, "inscricao": inscricao,
+                                                       "data_fundacao": data_fundacao, "email": email, "site": site,
+                                                       "instagram": instagram}).execute()
+                    st.success(f"Clinica {razao} cadastrado!")
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro: {e}")
+            else:
+                st.warning("Preencha pelo menos a Razão.")
+
+    with btn_editar:
+        if st.button("✏️ Atualizar"):
+            if codigo:
+                try:
+                    supabase.table("clinicas").update({"codigo": codigo, "razao": razao, "fantasia": fantasia, "endereco": endereco,
+                                                       "cep": cep, "bairro": bairro, "cidade": cidade, "estado": estado,
+                                                       "telefone": telefone,
+                                                       "telefone1": telefone1, "cnpj": cnpj, "inscricao": inscricao,
+                                                       "data_fundacao": data_fundacao, "email": email, "site": site,
+                                                       "instagram": instagram}).execute()
+                    st.success("Clinica atualizada!")
+                    #limpar_campos()
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro: {e}")
+            else:
+                st.warning("Selecione uma clinica para atualizar.")
+
+
+    with btn_deletar:
         # Botão comum (pode ser usado para cancelar/limpar)
-        submit1 = st.form_submit_button(label='Deletar')
-    with col_btn3:
+        #submit_deletar = st.form_submit_button(label='Deletar')
+        if st.button("🗑️ Deletar"):
+            if codigo:
+                try:
+                    supabase.table("clinicas").delete().eq("codigo", codigo).execute()
+                    st.success("Clinica deletada!")
+                    #limpar_campos()
+                    st.rerun()
+                except Exception as e:
+                    st.error(f"Erro: {e}")
+            else:
+                st.warning("Selecione uma clinica para deletar.")
+
+    with btn_cancelar:
         # Botão comum (pode ser usado para cancelar/limpar)
-        submit2 = st.form_submit_button(label='Cancelar')
+        #submit_cancelar = st.form_submit_button(label='Cancelar')
+        if st.button("🧹 Limpar Campos"):
+            #limpar_campos()
+            st.success(f"Registro Cancelado!")
+            st.rerun()
 
-
-#    submit = st.form_submit_button("Cadastrar")
-#    submit1 = st.form_submit_button("Deletart")
-#    submit2 = st.form_submit_button("Sair")
-
-if submit:
-    # Inserir no PostgreSQL
-    supabase.table("clinicas").insert({"codigo": codigo, "razao": razao, "fantasia": fantasia, "endereco": endereco,
-                                       "cep": cep, "bairro": bairro, "cidade": cidade, "estado": estado, "telefone": telefone,
-                                       "telefone1": telefone1, "cnpj": cnpj, "inscricao": inscricao,
-                                       "data_fundacao": data_fundacao, "email": email, "site": site, "instagram": instagram}).execute()
-    st.success(f"Clinica {razao} cadastrado!")
-    clear_on_submit = True
-    #st.rerun()
-
-if submit1:
-    # Deletar no PostgreSQL
-    #supabase.table("clinicas").insert({"codigo": codigo, "razao": razao, "fantasia": fantasia, "endereco": endereco,
-    #                                   "cep": cep, "bairro": bairro, "cidade": cidade, "estado": estado, "telefone": telefone,
-    #                                   "telefone1": telefone1, "cnpj": cnpj, "inscricao": inscricao,
-    #                                   "data_fundacao": data_fundacao, "email": email, "site": site, "instagram": instagram}).execute()
-    supabase.table("clientes").delete().eq("codigo", clinicas['codigo']).execute()
-    #st.success("Cliente excluído!")
-    st.success(f"Clinica {razao} deletada!")
-    clear_on_submit = True
-    #st.rerun()
-
-if submit2:
-    # Cancelar no Cadastro
-    #supabase.table("clinicas").insert({"codigo": codigo, "razao": razao, "fantasia": fantasia, "endereco": endereco,
-    #                                   "cep": cep, "bairro": bairro, "cidade": cidade, "estado": estado, "telefone": telefone,
-    #                                   "telefone1": telefone1, "cnpj": cnpj, "inscricao": inscricao,
-    #                                   "data_fundacao": data_fundacao, "email": email, "site": site, "instagram": instagram}).execute()
-    #st.success(f"Clinica {razao} cadastrado!")
-    st.text_input[razao] = ''
-    st.success(f"Registro Cancelado!")
-    clear_on_submit = True
-    #st.rerun()
 
 # Listar clientes
 #st.subheader("Clinicas Cadastrados")
