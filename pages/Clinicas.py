@@ -135,64 +135,82 @@ with st.form("form_clinica"):
 
     with btn_gravar:
         # Botão de envio (Submit)
+        #btn_create = st.form_submit_button("Cadastrar (Create)")
         #submit_gravar = st.form_submit_button(label='Salvar')
-        if st.button("➕ Gravar"):
-            if razao:
-                try:
-                    supabase.table("clinicas").insert({"codigo": codigo, "razao": razao, "fantasia": fantasia, "endereco": endereco,
-                                                       "cep": cep, "bairro": bairro, "cidade": cidade, "estado": estado,
-                                                       "telefone": telefone,
-                                                       "telefone1": telefone1, "cnpj": cnpj, "inscricao": inscricao,
-                                                       "data_fundacao": data_fundacao, "email": email, "site": site,
-                                                       "instagram": instagram}).execute()
-                    st.success(f"Clinica {razao} cadastrado!")
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Erro: {e}")
-            else:
-                st.warning("Preencha pelo menos a Razão.")
+        gravar = st.form_submit_button("➕ Gravar")
+#        if st.button("➕ Gravar"):
+#            if razao:
+#                try:
+#                    supabase.table("clinicas").insert({"codigo": codigo, "razao": razao, "fantasia": fantasia, "endereco": endereco,
+#                                                       "cep": cep, "bairro": bairro, "cidade": cidade, "estado": estado,
+#                                                       "telefone": telefone,
+#                                                       "telefone1": telefone1, "cnpj": cnpj, "inscricao": inscricao,
+#                                                       "data_fundacao": data_fundacao, "email": email, "site": site,
+#                                                       "instagram": instagram}).execute()
+#                    st.success(f"Clinica {razao} cadastrado!")
+#                    st.rerun()
+#                except Exception as e:
+#                    st.error(f"Erro: {e}")
+#            else:
+#                st.warning("Preencha pelo menos a Razão.")
+#
+#    with btn_editar:
+#        if st.button("✏️ Atualizar"):
+#            if codigo:
+#                try:
+#                    supabase.table("clinicas").update({"codigo": codigo, "razao": razao, "fantasia": fantasia, "endereco": endereco,
+#                                                       "cep": cep, "bairro": bairro, "cidade": cidade, "estado": estado,
+#                                                       "telefone": telefone,
+#                                                       "telefone1": telefone1, "cnpj": cnpj, "inscricao": inscricao,
+#                                                       "data_fundacao": data_fundacao, "email": email, "site": site,
+#                                                       "instagram": instagram}).execute()
+#                    st.success("Clinica atualizada!")
+#                    #limpar_campos()
+#                    st.rerun()
+#                except Exception as e:
+#                    st.error(f"Erro: {e}")
+#            else:
+#                st.warning("Selecione uma clinica para atualizar.")
+#
+#
+#    with btn_deletar:
+#        # Botão comum (pode ser usado para cancelar/limpar)
+#        #submit_deletar = st.form_submit_button(label='Deletar')
+#        if st.button("🗑️ Deletar"):
+#            if codigo:
+#                try:
+#                    supabase.table("clinicas").delete().eq("codigo", codigo).execute()
+#                    st.success("Clinica deletada!")
+#                    #limpar_campos()
+#                    st.rerun()
+#                except Exception as e:
+#                    st.error(f"Erro: {e}")
+#            else:
+#                st.warning("Selecione uma clinica para deletar.")
+#
+#    with btn_cancelar:
+#        # Botão comum (pode ser usado para cancelar/limpar)
+#        #submit_cancelar = st.form_submit_button(label='Cancelar')
+#        if st.button("🧹 Limpar Campos"):
+#            #limpar_campos()
+#            st.success(f"Registro Cancelado!")
+#            st.rerun()
 
-    with btn_editar:
-        if st.button("✏️ Atualizar"):
-            if codigo:
-                try:
-                    supabase.table("clinicas").update({"codigo": codigo, "razao": razao, "fantasia": fantasia, "endereco": endereco,
-                                                       "cep": cep, "bairro": bairro, "cidade": cidade, "estado": estado,
-                                                       "telefone": telefone,
-                                                       "telefone1": telefone1, "cnpj": cnpj, "inscricao": inscricao,
-                                                       "data_fundacao": data_fundacao, "email": email, "site": site,
-                                                       "instagram": instagram}).execute()
-                    st.success("Clinica atualizada!")
-                    #limpar_campos()
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Erro: {e}")
-            else:
-                st.warning("Selecione uma clinica para atualizar.")
-
-
-    with btn_deletar:
-        # Botão comum (pode ser usado para cancelar/limpar)
-        #submit_deletar = st.form_submit_button(label='Deletar')
-        if st.button("🗑️ Deletar"):
-            if codigo:
-                try:
-                    supabase.table("clinicas").delete().eq("codigo", codigo).execute()
-                    st.success("Clinica deletada!")
-                    #limpar_campos()
-                    st.rerun()
-                except Exception as e:
-                    st.error(f"Erro: {e}")
-            else:
-                st.warning("Selecione uma clinica para deletar.")
-
-    with btn_cancelar:
-        # Botão comum (pode ser usado para cancelar/limpar)
-        #submit_cancelar = st.form_submit_button(label='Cancelar')
-        if st.button("🧹 Limpar Campos"):
-            #limpar_campos()
-            st.success(f"Registro Cancelado!")
+if gravar:
+    if razao:
+        try:
+            supabase.table("clinicas").insert({"codigo": codigo, "razao": razao, "fantasia": fantasia, "endereco": endereco,
+                                                "cep": cep, "bairro": bairro, "cidade": cidade, "estado": estado,
+                                                "telefone": telefone,
+                                                "telefone1": telefone1, "cnpj": cnpj, "inscricao": inscricao,
+                                                "data_fundacao": data_fundacao, "email": email, "site": site,
+                                                "instagram": instagram}).execute()
+            st.success(f"Clinica {razao} cadastrado!")
             st.rerun()
+        except Exception as e:
+            st.error(f"Erro: {e}")
+    else:
+        st.warning("Preencha pelo menos a Razão.")
 
 
 # Listar clientes
