@@ -123,7 +123,7 @@ with st.form("form_clinica"):
         email = st.text_input("E-mail")
 
     with col15:
-        site = st.text_input("Site")
+        site = st.text_input("Site") 
 
     with col16:
         instagram = st.text_input("Instagram")
