@@ -196,9 +196,9 @@ with st.form("form_clinica"):
 
 
 # Listar clientes
-#st.subheader("Clinicas Cadastrados")
-#response = supabase.table("clinicas").select("*").execute()
-#st.dataframe(response.data)
+st.subheader("Clinicas Cadastrados")
+response = supabase.table("clinicas").select("*").execute()
+st.dataframe(response.data)
 
 # Aba 2: Exibição dos dados e Seleção Interativa
 #st.subheader("Lista de Clientes")
