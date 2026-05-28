@@ -55,12 +55,12 @@ def ler_clientes():
 #    supabase.table("clientes").insert(data).execute()
 #    #st.success("Cliente cadastrado com sucesso!")
 
-def atualizar_cliente(id_cliente, nome, email, telefone):
+#def atualizar_cliente(id_cliente, nome, email, telefone):
 #    data = {"nome": nome, "email": email, "telefone": telefone}
 #    supabase.table("clientes").update(data).eq("id", id_cliente).execute()
 #    #st.success("Cliente atualizado com sucesso!")
 
-def deletar_cliente(id_cliente):
+#def deletar_cliente(id_cliente):
 #    supabase.table("clientes").delete().eq("id", id_cliente).execute()
 #    #st.success("Cliente deletado com sucesso!")
 
@@ -214,10 +214,10 @@ if btn_cancelar:
 # Listar clientes
 st.subheader("Clinicas Cadastrados")
 response = supabase.table("clinicas").select("*").execute()
-st.dataframe(response.data)
+#st.dataframe(response.data)
 
 # Aba 2: Exibição dos dados e Seleção Interativa
-st.subheader("Lista de Clientes")
+#st.subheader("Lista de Clientes")
 #df_clientes = get_clinicas()
 
 if not response.empty:
