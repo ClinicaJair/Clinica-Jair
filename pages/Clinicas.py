@@ -42,7 +42,7 @@ st.markdown("""
 #    st.success("Cliente deletado com sucesso!")
 
 #def obter_dados_tabela(clientes):
-#    # Executa um SELECT * na tabela desejada
+    # Executa um SELECT * na tabela desejada
 #    response = supabase.table(clientes).select("*").execute()
 #    return response.data
 
