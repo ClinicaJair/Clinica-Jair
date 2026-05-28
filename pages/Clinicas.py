@@ -50,19 +50,19 @@ def ler_clientes():
     response = supabase.table("clientes").select("*").execute()
     return pd.DataFrame(response.data) if response.data else pd.DataFrame()
 
-def cadastrar_cliente(nome, email, telefone):
-    data = {"nome": nome, "email": email, "telefone": telefone}
-    supabase.table("clientes").insert(data).execute()
-    #st.success("Cliente cadastrado com sucesso!")
+#def cadastrar_cliente(nome, email, telefone):
+#    data = {"nome": nome, "email": email, "telefone": telefone}
+#    supabase.table("clientes").insert(data).execute()
+#    #st.success("Cliente cadastrado com sucesso!")
 
 def atualizar_cliente(id_cliente, nome, email, telefone):
-    data = {"nome": nome, "email": email, "telefone": telefone}
-    supabase.table("clientes").update(data).eq("id", id_cliente).execute()
-    #st.success("Cliente atualizado com sucesso!")
+#    data = {"nome": nome, "email": email, "telefone": telefone}
+#    supabase.table("clientes").update(data).eq("id", id_cliente).execute()
+#    #st.success("Cliente atualizado com sucesso!")
 
 def deletar_cliente(id_cliente):
-    supabase.table("clientes").delete().eq("id", id_cliente).execute()
-    #st.success("Cliente deletado com sucesso!")
+#    supabase.table("clientes").delete().eq("id", id_cliente).execute()
+#    #st.success("Cliente deletado com sucesso!")
 
 #******************
 
@@ -143,19 +143,19 @@ with st.form("form_clinica"):
         # Botão de envio (Submit)
         #btn_create = st.form_submit_button("Cadastrar (Create)")
         #submit_gravar = st.form_submit_button(label='Salvar')
-        btn_editar = st.form_submit_button("➕ Gravar1")
+        btn_editar = st.form_submit_button("✏️ Atualizar")
 
     with col_deletar:
         # Botão de envio (Submit)
         #btn_create = st.form_submit_button("Cadastrar (Create)")
         #submit_gravar = st.form_submit_button(label='Salvar')
-        btn_deletar = st.form_submit_button("➕ Gravar2")
+        btn_deletar = st.form_submit_button("🗑️ Deletar")
 
     with col_cancelar:
         # Botão de envio (Submit)
         #btn_create = st.form_submit_button("Cadastrar (Create)")
         #submit_gravar = st.form_submit_button(label='Salvar')
-        btn_cancelar = st.form_submit_button("➕ Gravar3")
+        btn_cancelar = st.form_submit_button("🧹 Cabcelar")
 
 if btn_gravar:
     if razao:
@@ -174,46 +174,42 @@ if btn_gravar:
         st.warning("Preencha pelo menos a Razão.")
 
 if btn_editar:
-    if st.button("✏️ Atualizar"):
-        if codigo:
-            try:
-                supabase.table("clinicas").update({"codigo": codigo, "razao": razao, "fantasia": fantasia, "endereco": endereco,
-                                                    "cep": cep, "bairro": bairro, "cidade": cidade, "estado": estado,
-                                                    "telefone": telefone,
-                                                    "telefone1": telefone1, "cnpj": cnpj, "inscricao": inscricao,
-                                                    "data_fundacao": data_fundacao, "email": email, "site": site,
-                                                    "instagram": instagram}).execute()
-                st.success("Clinica atualizada!")
-                #limpar_campos()
-                st.rerun()
-            except Exception as e:
-                st.error(f"Erro: {e}")
-        else:
-            st.warning("Selecione uma clinica para atualizar.")
-
+    if codigo:
+        try:
+            supabase.table("clinicas").update({"codigo": codigo, "razao": razao, "fantasia": fantasia, "endereco": endereco,
+                                                "cep": cep, "bairro": bairro, "cidade": cidade, "estado": estado,
+                                                "telefone": telefone,
+                                                "telefone1": telefone1, "cnpj": cnpj, "inscricao": inscricao,
+                                                "data_fundacao": data_fundacao, "email": email, "site": site,
+                                                "instagram": instagram}).execute()
+            st.success("Clinica atualizada!")
+            #limpar_campos()
+            st.rerun()
+        except Exception as e:
+            st.error(f"Erro: {e}")
+    else:
+        st.warning("Selecione uma clinica para atualizar.")
 
 if btn_deletar:
     # Botão comum (pode ser usado para cancelar/limpar)
     #submit_deletar = st.form_submit_button(label='Deletar')
-    if st.button("🗑️ Deletar"):
-        if codigo:
-            try:
-                supabase.table("clinicas").delete().eq("codigo", codigo).execute()
-                st.success("Clinica deletada!")
-                #limpar_campos()
-                st.rerun()
-            except Exception as e:
-                st.error(f"Erro: {e}")
-        else:
-            st.warning("Selecione uma clinica para deletar.")
+    if codigo:
+        try:
+            supabase.table("clinicas").delete().eq("codigo", codigo).execute()
+            st.success("Clinica deletada!")
+            #limpar_campos()
+            st.rerun()
+        except Exception as e:
+            st.error(f"Erro: {e}")
+    else:
+        st.warning("Selecione uma clinica para deletar.")
 
 if btn_cancelar:
     # Botão comum (pode ser usado para cancelar/limpar)
     #submit_cancelar = st.form_submit_button(label='Cancelar')
-    if st.button("🧹 Limpar Campos"):
-        #limpar_campos()
-        st.success(f"Registro Cancelado!")
-        st.rerun()
+    #limpar_campos()
+    st.success(f"Registro Cancelado!")
+    st.rerun()
 
 # Listar clientes
 st.subheader("Clinicas Cadastrados")
@@ -221,22 +217,22 @@ response = supabase.table("clinicas").select("*").execute()
 st.dataframe(response.data)
 
 # Aba 2: Exibição dos dados e Seleção Interativa
-#st.subheader("Lista de Clientes")
+st.subheader("Lista de Clientes")
 #df_clientes = get_clinicas()
 
-#if not df_clientes.empty:
+if not response.empty:
     # Seleção nativa de linhas do Streamlit (on_select="rerun" para atualizar a tela)
-#    event = st.dataframe(
-#        df_clientes,
-#        use_container_width=True,
-#        hide_index=True,
-#        on_select="rerun",
-#        selection_mode="single-row"
-#    )
+    event = st.dataframe(
+        response,
+        use_container_width=True,
+        hide_index=True,
+        on_select="rerun",
+        selection_mode="single-row"
+    )
 
     # Ao clicar em uma linha, atualiza o session_state e recarrega a tela
-#    if event.selection.rows:
-#        selected_index = event.selection.rows[0]
-#        st.session_state.selected_customer_id = df_clientes.iloc[selected_index]['id']
-#else:
-#    st.info("Nenhum cliente cadastrado ainda.")
+    if event.selection.rows:
+        selected_index = event.selection.rows[0]
+        st.session_state.selected_customer_id = response.iloc[selected_index]['id']
+else:
+    st.info("Nenhum cliente cadastrado ainda.")
