@@ -46,9 +46,9 @@ st.markdown("""
 #    response = supabase.table(clientes).select("*").execute()
 #    return response.data
 
-def ler_clientes():
-    response = supabase.table("clientes").select("*").execute()
-    return pd.DataFrame(response.data) if response.data else pd.DataFrame()
+def ler_dados():
+    response = supabase.table("clinicas").select("*").execute()
+    return pd.DataFrame(response.data)
 
 #def cadastrar_cliente(nome, email, telefone):
 #    data = {"nome": nome, "email": email, "telefone": telefone}
@@ -68,6 +68,13 @@ def ler_clientes():
 
 # 4. Layout da Interface (Formulário e DataFrame)
 st.title("👤 Cadastro da Clinica")
+
+# Estado da Sessão para guardar o ID do cliente selecionado
+if 'selected_customer_id' not in st.session_state:
+    st.session_state.selected_customer_id = None
+
+# Ler dados atuais
+df_clientes = ler_dados()
 
 with st.form("form_clinica"):
 
@@ -211,19 +218,43 @@ if btn_cancelar:
     st.success(f"Registro Cancelado!")
     st.rerun()
 
-# Listar clientes
-st.subheader("Clinicas Cadastrados")
-response = supabase.table("clinicas").select("*").execute()
-#st.dataframe(response.data)
-
 # Aba 2: Exibição dos dados e Seleção Interativa
-#st.subheader("Lista de Clientes")
-#df_clientes = get_clinicas()
+st.subheader("Lista de Clientes")
 
-if not response.empty:
-    # Seleção nativa de linhas do Streamlit (on_select="rerun" para atualizar a tela)
+df_clientes = supabase.table("clinicas").select("*").execute()
+
+# Campo de texto para digitação
+termo_busca = st.text_input("Digite o nome ou ID para filtrar:")
+
+# 3. Consulta ao Banco de Dados
+if termo_busca:
+    try:
+        # Busca na tabela 'usuarios' onde o campo 'nome' é igual ao digitado
+        response = supabase.table("clinicas").select("*").eq("razao", termo_busca).execute()
+
+        dados = response.data  # Retorna uma lista de dicionários
+
+        if dados:
+            # Exibe os resultados em formato de tabela interativa
+            df_clientes = pd.DataFrame(dados)
+            event = st.dataframe(
+                df_clientes,
+                use_container_width = True,
+                hide_index = True,
+                on_select = "rerun",
+                selection_mode = "single-row"
+            )
+
+        else:
+            st.warning("Nenhum registro encontrado para este termo.")
+
+    except Exception as e:
+        st.error(f"Erro ao consultar o banco de dados: {e}")
+else:
+#if not df_clientes.empty:
+#    # Seleção nativa de linhas do Streamlit (on_select="rerun" para atualizar a tela)
     event = st.dataframe(
-        response,
+        df_clientes,
         use_container_width=True,
         hide_index=True,
         on_select="rerun",
@@ -233,6 +264,6 @@ if not response.empty:
     # Ao clicar em uma linha, atualiza o session_state e recarrega a tela
     if event.selection.rows:
         selected_index = event.selection.rows[0]
-        st.session_state.selected_customer_id = response.iloc[selected_index]['id']
-else:
-    st.info("Nenhum cliente cadastrado ainda.")
+        st.session_state.selected_customer_id = df_clientes.iloc[selected_index]['id']
+#else:
+#    st.info("Nenhum cliente cadastrado ainda.")

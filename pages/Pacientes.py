@@ -20,7 +20,7 @@ def read_customers():
     return pd.DataFrame(response.data)
 
 def create_customer(nome, email, telefone):
-    supabase.table("clientes").insert({"id": codigo, "nome": nome, "email": email, "telefone": telefone, "estado": estado}).execute()
+    supabase.table("clientes").insert({"id": id, "nome": nome}).execute()
     st.success("Cliente cadastrado com sucesso!")
 
 def update_customer(cliente_id, nome, email, telefone):
