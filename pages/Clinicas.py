@@ -1,5 +1,5 @@
 import streamlit as st
-from st_supabase_connection import SupabaseConnection
+#from st_supabase_connection import SupabaseConnection
 from supabase import create_client
 import pandas as pd
 from reportlab.lib.pagesizes import letter
