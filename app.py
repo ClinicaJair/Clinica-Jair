@@ -1,6 +1,7 @@
 import streamlit as st
-from st_supabase_connection import SupabaseConnection
+#from st_supabase_connection import SupabaseConnection
 import pandas as pd
+from supabase import create_client
 from datetime import datetime
 from streamlit_autorefresh import st_autorefresh
 from supabase import create_client, Client
@@ -10,7 +11,11 @@ from reportlab.lib import colors
 import io
 
 # 1. Conexão com o Banco de Dados (Substitua pelas suas credenciais do Supabase)
-supabase = st.connection("supabase", type=SupabaseConnection)
+#supabase = st.connection("supabase", type=SupabaseConnection)
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+
+supabase = create_client(url, key)
 
 st.set_page_config(page_title="Sistema Comercial", page_icon="📊", layout="wide")
 

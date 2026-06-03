@@ -19,8 +19,8 @@ st.markdown("""
 
 # 1. Conexão com o Banco de Dados (Substitua pelas suas credenciais do Supabase)
 #supabase = st.connection("supabase", type=SupabaseConnection)
-url = st.secrets["supabase"]["supabase_url"]
-key = st.secrets["supabase"]["supabase_key"]
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 supabase = create_client(url, key)
 
 st.set_page_config(page_title="Cadastro de Pacientes", layout="wide")
