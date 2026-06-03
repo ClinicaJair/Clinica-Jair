@@ -1,5 +1,6 @@
 import streamlit as st
 from st_supabase_connection import SupabaseConnection
+from supabase import create_client
 import pandas as pd
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
@@ -17,7 +18,10 @@ st.markdown("""
         """, unsafe_allow_html=True)
 
 # 1. Conexão com o Banco de Dados (Substitua pelas suas credenciais do Supabase)
-supabase = st.connection("supabase", type=SupabaseConnection)
+#supabase = st.connection("supabase", type=SupabaseConnection)
+url = st.secrets["supabase"]["supabase_url"]
+key = st.secrets["supabase"]["supabase_key"]
+supabase = create_client(url, key)
 
 st.set_page_config(page_title="Cadastro de Pacientes", layout="wide")
 st.title("Cadastro de Pacientes")
