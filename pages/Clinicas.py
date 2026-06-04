@@ -2,6 +2,7 @@ import streamlit as st
 #from st_supabase_connection import SupabaseConnection
 from supabase import create_client, Client
 import pandas as pd
+import re
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib import colors
@@ -42,6 +43,16 @@ def limpar_campos():
 def carregar_dados():
     response = supabase.table("clinicas").select("*").execute()
     return pd.DataFrame(response.data)
+
+# 1. Função para aplicar a máscara no input (00000-000)
+def mascara_cep(val_cep):
+    val_cep = re.sub(f'[^0-9]', '', val_cep) # Remove caracteres não numéricos
+    if len(val_cep) > 8:
+        val_cep = val_cep[:8]
+    if len(val_cep) > 5:
+        return f"{val_cep[:5]}-{val_cep[5:]}"
+    return val_cep
+
 
 # 3. Formulário de Cadastro e Edição (Create, Update, Delete)
 #st.sidebar.header("Cadastro / Edição")
@@ -97,6 +108,9 @@ with st.form(key=f"form_cliente_{st.session_state.update_trigger}"):
     with col7:
         #cep = st.text_input("CEP")
         cep = st.text_input("CEP", value=clinica_selecionado['cep'] if clinica_selecionado is not None else "")
+        # 2. Entrada de dados
+        cep_digitado = cep
+        cep = mascara_cep(cep_digitado) 
 
     with col8:
         #endereco = st.text_input("Endereço")
