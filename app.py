@@ -46,8 +46,17 @@ hora_formatada = agora.strftime("%H:%M:%S")
 # 3. Exibe o relógio na Barra Lateral (Sidebar)
 #with st.sidebar:
 st.markdown("### 🕒 Horário do Sistema")
-st.metric(label="Data", value=data_formatada)
-st.metric(label="Hora Atual", value=hora_formatada)
+#st.metric(label="Data", value=data_formatada)
+#$st.metric(label="Hora Atual", value=hora_formatada)
+
+col1, col2, = st.columns([5, 5])
+
+# 2. Usar 'with' para adicionar widgets nas colunas
+with col1:
+    st.metric(label="Data", value=data_formatada)
+
+with col2:
+    st.metric(label="Hora Atual", value=hora_formatada)
 
 #st.markdown("""
 #("""
