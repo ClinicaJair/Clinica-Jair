@@ -1,11 +1,18 @@
 import streamlit as st
 #from st_supabase_connection import SupabaseConnection
-from supabase import create_client
+from supabase import create_client, Client
 import pandas as pd
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
 from reportlab.lib import colors
 import io
+
+# 1. Conexão com o Banco de Dados (Substitua pelas suas credenciais do Supabase)
+#supabase = st.connection("supabase", type=SupabaseConnection)
+SUPABASE_URL = st.secrets["SUPABASE_URL"]
+SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+
+supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
 # 2. CSS para remover o espaçamento do topo
 st.markdown("""
@@ -17,12 +24,6 @@ st.markdown("""
         </style>
         """, unsafe_allow_html=True)
 
-# 1. Conexão com o Banco de Dados (Substitua pelas suas credenciais do Supabase)
-#supabase = st.connection("supabase", type=SupabaseConnection)
-SUPABASE_URL = st.secrets["SUPABASE_URL"]
-SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
-
-supabase = create_client(url, key)
 
 st.set_page_config(page_title="Cadastro de Clinicas", layout="wide")
 st.title("Cadastro de Clinicas")
