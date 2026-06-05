@@ -45,23 +45,25 @@ def carregar_dados():
     return pd.DataFrame(response.data)
 
 
-# Função de callback para formatar o CEP enquanto o usuário digita
-def formatar_cep():
-    # Pega o valor atual digitado no input
-    valor = st.session_state.cep
+# Função para aplicar a máscara de CEP
+def aplicar_mascara_cep():
+    # Pega o valor atual do input
+    valor_atual = st.session_state['input_cep']
 
-    # Remove qualquer caractere que não seja número
-    apenas_numeros = "".join(filter(str.isdigit, valor))
+    # Remove tudo que não for número
+    apenas_numeros = re.sub(r'\D', '', valor_atual)
 
-    # Aplica a máscara 99999-999
+    # Limita a quantidade de caracteres a 8 (tamanho do CEP)
+    apenas_numeros = apenas_numeros[:8]
+
+    # Aplica a máscara: 00000-000
     if len(apenas_numeros) > 5:
-        mascara = f"{apenas_numeros[:5]}-{apenas_numeros[5:8]}"
+        cep_formatado = f"{apenas_numeros[:5]}-{apenas_numeros[5:]}"
     else:
-        mascara = apenas_numeros
+        cep_formatado = apenas_numeros
 
-    # Atualiza o estado da sessão com a máscara
-    st.session_state.cep = mascara[:9]
-
+    # Atualiza o valor do session_state com o CEP formatado
+    st.session_state['input_cep'] = cep_formatado
 
 # 3. Formulário de Cadastro e Edição (Create, Update, Delete)
 #st.sidebar.header("Cadastro / Edição")
@@ -119,12 +121,12 @@ with st.form(key=f"form_cliente_{st.session_state.update_trigger}"):
         #cep = st.text_input("CEP", value=clinica_selecionado['cep'] if clinica_selecionado is not None else "")
         #cep = st_input_mask("CEP", mask="99999-999", value=clinica_selecionado['cep'] if clinica_selecionado is not None else "")
         # Cria o campo de entrada no Streamlit
-        cep_input = st.text_input(
+        st.text_input(
             label="Digite seu CEP:",
+            key='input_cep',
+            on_change=aplicar_mascara_cep,
             placeholder="00000-000",
-            max_chars=9,
-            key="cep",
-            on_change=formatar_cep
+            help="Digite apenas números, a máscara será aplicada automaticamente."
         )
         cep = cep_input
 
