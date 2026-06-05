@@ -124,7 +124,8 @@ with st.form(key=f"form_cliente_{st.session_state.update_trigger}"):
         # st.selectbox buscando dados
         opcao_selecionada = st.selectbox(
             "Selecione um item da outra tabela:",
-            options=opcoes_selectbox
+            options=opcoes_selectbox,
+            index=0
         )
         estado = opcao_selecionada
 
