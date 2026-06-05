@@ -43,12 +43,13 @@ def carregar_dados():
     response = supabase.table("clinicas").select("*").execute()
     return pd.DataFrame(response.data)
 
-# 1. Função para buscar dados da tabela origem (ex: 'categorias')
-def buscar_estado():
-    response = supabase.table("estados").select("sigla, nome").execute()
-    # Converte a resposta para um DataFrame do Pandas
-    df = pd.DataFrame(response.data)
-    return df
+# 1. Busca os dados de origem para popular o selectbox
+# Substitua 'tabela_origem' e 'coluna_nome' pelos nomes reais no seu banco
+response = supabase.table('estados').select('id, sigla, nome').execute()
+dados_origem = response.data
+
+# Cria uma lista de tuplas ou dicionários e extrai apenas os nomes para exibição
+opcoes_selectbox = [item['sigla'] for item in dados_origem]
 
 # 3. Formulário de Cadastro e Edição (Create, Update, Delete)
 #st.sidebar.header("Cadastro / Edição")
@@ -119,18 +120,13 @@ with st.form(key=f"form_cliente_{st.session_state.update_trigger}"):
 
     with col11:
         #estado = st.text_input("Estado")
-        estado = st.text_input("Estado", value=clinica_selecionado['estado'] if clinica_selecionado is not None else "")
-        # Busca os dados no Supabase para preencher o selectbox
-
-        df_categorias = buscar_estado()
-        opcoes_exibicao = df_categorias["sigla"].tolist()
-
-            # Componente nativo do Streamlit
-        estado = st.selectbox("Selecione uma categoria:", opcoes_exibicao)
-
-        # Pega o ID correspondente à opção selecionada
-        #id_selecionado = df_categorias.loc[df_categorias["nome_categoria"] == escolha_estado, "id"].iloc[0]
-        #estado = st.text_input("Estado", value=escolha_estado if escolha_estado is not None else "")
+        #estado = st.text_input("Estado", value=clinica_selecionado['estado'] if clinica_selecionado is not None else "")
+        # st.selectbox buscando dados
+        opcao_selecionada = st.selectbox(
+            "Selecione um item da outra tabela:",
+            options=opcoes_selectbox
+        )
+        estado = opcao_selecionada
 
     with col12:
         #telefone = st.text_input("Telefone")
