@@ -1,5 +1,5 @@
 import streamlit as st
-#from st_supabase_connection import SupabaseConnection
+#from streamlit-input_mask import st_input_mask
 from supabase import create_client, Client
 import pandas as pd
 import re
@@ -44,14 +44,23 @@ def carregar_dados():
     response = supabase.table("clinicas").select("*").execute()
     return pd.DataFrame(response.data)
 
-# 1. Função para aplicar a máscara no input (00000-000)
-def mascara_cep(val_cep):
-    val_cep = re.sub(f'[^0-9]', '', val_cep) # Remove caracteres não numéricos
-    if len(val_cep) > 8:
-        val_cep = val_cep[:8]
-    if len(val_cep) > 5:
-        return f"{val_cep[:5]}-{val_cep[5:]}"
-    return val_cep
+
+# Função de callback para formatar o CEP enquanto o usuário digita
+def formatar_cep():
+    # Pega o valor atual digitado no input
+    valor = st.session_state.meu_cep
+
+    # Remove qualquer caractere que não seja número
+    apenas_numeros = "".join(filter(str.isdigit, valor))
+
+    # Aplica a máscara 99999-999
+    if len(apenas_numeros) > 5:
+        mascara = f"{apenas_numeros[:5]}-{apenas_numeros[5:8]}"
+    else:
+        mascara = apenas_numeros
+
+    # Atualiza o estado da sessão com a máscara
+    st.session_state.meu_cep = mascara[:9]
 
 
 # 3. Formulário de Cadastro e Edição (Create, Update, Delete)
@@ -107,10 +116,17 @@ with st.form(key=f"form_cliente_{st.session_state.update_trigger}"):
 
     with col7:
         #cep = st.text_input("CEP")
-        cep = st.text_input("CEP", value=clinica_selecionado['cep'] if clinica_selecionado is not None else "")
-        # 2. Entrada de dados
-        cep_digitado = cep
-        cep = mascara_cep(cep_digitado) 
+        #cep = st.text_input("CEP", value=clinica_selecionado['cep'] if clinica_selecionado is not None else "")
+        #cep = st_input_mask("CEP", mask="99999-999", value=clinica_selecionado['cep'] if clinica_selecionado is not None else "")
+        # Cria o campo de entrada no Streamlit
+        cep_input = st.text_input(
+            label="Digite seu CEP:",
+            placeholder="00000-000",
+            max_chars=9,
+            key="meu_cep",
+            on_change=formatar_cep
+        )
+        cep = cep_input
 
     with col8:
         #endereco = st.text_input("Endereço")
@@ -230,6 +246,7 @@ st.subheader("Lista de Clinicas Cadastrados")
 if not df_dados.empty:
     filtro = st.text_input("Filtrar por Razão Social:")
     campos_tabela = ['razao', 'fantasia']
+    df_dados = carregar_dados()
     if filtro:
         df_relatorio = df_dados[df_dados['razao'].str.contains(filtro, case=False, na=False)][campos_tabela]
     else:
