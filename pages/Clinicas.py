@@ -45,11 +45,11 @@ def carregar_dados():
 
 # 1. Busca os dados de origem para popular o selectbox
 # Substitua 'tabela_origem' e 'coluna_nome' pelos nomes reais no seu banco
-response = supabase.table('estados').select("id, sigla").execute()
+response = supabase.table("estados").select("id, sigla").execute()
 dados_origem = response.data
 
 # Cria uma lista de tuplas ou dicionários e extrai apenas os nomes para exibição
-opcoes_selectbox = [item['sigla'] for item in dados_origem]
+opcoes_selectbox = [item["sigla"] for item in dados_origem]
 
 # 3. Formulário de Cadastro e Edição (Create, Update, Delete)
 #st.sidebar.header("Cadastro / Edição")
