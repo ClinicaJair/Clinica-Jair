@@ -48,7 +48,7 @@ def carregar_dados():
 # Função de callback para formatar o CEP enquanto o usuário digita
 def formatar_cep():
     # Pega o valor atual digitado no input
-    valor = st.session_state.meu_cep
+    valor = st.session_state.cep
 
     # Remove qualquer caractere que não seja número
     apenas_numeros = "".join(filter(str.isdigit, valor))
@@ -60,7 +60,7 @@ def formatar_cep():
         mascara = apenas_numeros
 
     # Atualiza o estado da sessão com a máscara
-    st.session_state.meu_cep = mascara[:9]
+    st.session_state.cep = mascara[:9]
 
 
 # 3. Formulário de Cadastro e Edição (Create, Update, Delete)
