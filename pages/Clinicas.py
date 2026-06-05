@@ -122,7 +122,7 @@ with st.form(key=f"form_cliente_{st.session_state.update_trigger}"):
         #estado = st.text_input("Estado", value=clinica_selecionado['estado'] if clinica_selecionado is not None else "")
         # Busca os dados no Supabase para preencher o selectbox
         df_categorias = buscar_estado()
-        opcoes_exibicao = df_categorias["nome"].tolist()
+        opcoes_exibicao = df_categorias["sigla"].tolist()
 
         # Componente nativo do Streamlit
         estado = st.selectbox("Selecione uma categoria:", opcoes_exibicao)
