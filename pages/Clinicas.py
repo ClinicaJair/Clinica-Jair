@@ -1,5 +1,4 @@
 import streamlit as st
-#from streamlit-input_mask import st_input_mask
 from supabase import create_client, Client
 import pandas as pd
 import re
@@ -44,26 +43,6 @@ def carregar_dados():
     response = supabase.table("clinicas").select("*").execute()
     return pd.DataFrame(response.data)
 
-
-# Função para aplicar a máscara de CEP
-def aplicar_mascara_cep():
-    # Pega o valor atual do input
-    valor_atual = st.session_state['input_cep']
-
-    # Remove tudo que não for número
-    apenas_numeros = re.sub(r'\D', '', valor_atual)
-
-    # Limita a quantidade de caracteres a 8 (tamanho do CEP)
-    apenas_numeros = apenas_numeros[:8]
-
-    # Aplica a máscara: 00000-000
-    if len(apenas_numeros) > 5:
-        cep_formatado = f"{apenas_numeros[:5]}-{apenas_numeros[5:]}"
-    else:
-        cep_formatado = apenas_numeros
-
-    # Atualiza o valor do session_state com o CEP formatado
-    st.session_state['input_cep'] = cep_formatado
 
 # 3. Formulário de Cadastro e Edição (Create, Update, Delete)
 #st.sidebar.header("Cadastro / Edição")
@@ -118,17 +97,7 @@ with st.form(key=f"form_cliente_{st.session_state.update_trigger}"):
 
     with col7:
         #cep = st.text_input("CEP")
-        #cep = st.text_input("CEP", value=clinica_selecionado['cep'] if clinica_selecionado is not None else "")
-        #cep = st_input_mask("CEP", mask="99999-999", value=clinica_selecionado['cep'] if clinica_selecionado is not None else "")
-        # Cria o campo de entrada no Streamlit
-        st.text_input(
-            label="Digite seu CEP:",
-            key='input_cep',
-            on_change=aplicar_mascara_cep,
-            placeholder="00000-000",
-            help="Digite apenas números, a máscara será aplicada automaticamente."
-        )
-        cep = cep_input
+        cep = st.text_input("CEP", value=clinica_selecionado['cep'] if clinica_selecionado is not None else "")
 
     with col8:
         #endereco = st.text_input("Endereço")
