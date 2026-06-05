@@ -123,9 +123,10 @@ with st.form(key=f"form_cliente_{st.session_state.update_trigger}"):
         #estado = st.text_input("Estado", value=clinica_selecionado['estado'] if clinica_selecionado is not None else "")
         # st.selectbox buscando dados
         opcao_selecionada = st.selectbox(
-            "Selecione um item da outra tabela:",
+            "Estado:",
             options=opcoes_selectbox,
-            index=0
+            index=None,
+            placeholder="Escolha uma opção"
         )
         estado = opcao_selecionada
 
