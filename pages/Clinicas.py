@@ -128,7 +128,10 @@ with st.form(key=f"form_cliente_{st.session_state.update_trigger}"):
             index=None,
             placeholder="Escolha uma opção"
         )
-        estado = opcao_selecionada
+        if opcao_selecionada:
+            estado = opcao_selecionada
+        else:
+            estado = st.text_input("Estado", value=clinica_selecionado['estado'] if clinica_selecionado is not None else "")
 
     with col12:
         #telefone = st.text_input("Telefone")
