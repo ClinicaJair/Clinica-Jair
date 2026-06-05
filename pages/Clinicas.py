@@ -123,7 +123,7 @@ with st.form(key=f"form_cliente_{st.session_state.update_trigger}"):
             label="Digite seu CEP:",
             placeholder="00000-000",
             max_chars=9,
-            key="meu_cep",
+            key="cep",
             on_change=formatar_cep
         )
         cep = cep_input
