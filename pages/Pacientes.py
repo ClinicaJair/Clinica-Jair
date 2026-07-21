@@ -1,340 +1,484 @@
-import streamlit as st
-#from st_supabase_connection import SupabaseConnection
-from supabase import create_client, Client
-import pandas as pd
-from reportlab.lib.pagesizes import letter
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
-from reportlab.lib import colors
 import io
+import time
+import pandas as pd
+import streamlit as st
+from fpdf import FPDF
+from supabase import Client, create_client
 
-# 1. Conexão com o Banco de Dados (Substitua pelas suas credenciais do Supabase)
-#supabase = st.connection("supabase", type=SupabaseConnection)
-SUPABASE_URL = st.secrets["SUPABASE_URL"]
-SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
-
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-
-
-# 2. CSS para remover o espaçamento do topo
-st.markdown("""
-        <style>
-               .block-container {
-                    padding-top: 1rem;
-                    padding-bottom: 0rem;
-                }
-        </style>
-        """, unsafe_allow_html=True)
-
-
+# ==========================================
+# 1. Configuração da Página
+# ==========================================
 st.set_page_config(page_title="Cadastro de Pacientes", layout="wide")
-st.title("Cadastro de Pacientes")
 
-# 3. Inicialização do Session State para guardar o ID selecionado e limpar campos
-if 'paciente_selecionado_id' not in st.session_state:
-    st.session_state.paciente_selecionado_id = None
-if 'update_trigger' not in st.session_state:
+# CSS para customizar a mensagem centralizada na tela
+st.markdown(
+    """
+    <style>
+    .block-container { padding-top: 1rem !important; padding-bottom: 0rem !important; }
+    header { visibility: hidden; height: 0px; }
+
+    /* Estilização do Toast / Popup Centralizado */
+    .mensagem-centralizada {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 99999;
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: bold;
+        box-shadow: 0px 4px 12px rgba(0,0,0,0.15);
+        text-align: center;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translate(-50%, -10px); }
+        to { opacity: 1; transform: translate(-50%, 0); }
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+# ==========================================
+# 2. Conexão com o Supabase
+# ==========================================
+@st.cache_resource
+def iniciar_conexao():
+    try:
+        SUPABASE_URL = st.secrets["SUPABASE_URL"]
+        SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+        return create_client(SUPABASE_URL, SUPABASE_KEY)
+    except Exception as e:
+        st.error(f"Erro ao carregar credenciais do Supabase: {e}")
+        st.stop()
+
+
+supabase = iniciar_conexao()
+
+
+# ==========================================
+# 3. Função para Gerar Relatório PDF
+# ==========================================
+def gerar_relatorio_pdf(df):
+    """Gera um PDF formatado convertendo strings para evitar erros de caractere."""
+    pdf = FPDF(orientation="P", unit="mm", format="A4")
+    pdf.add_page()
+    pdf.set_font("helvetica", size=10)
+
+    def limpar_texto(txt):
+        if not txt:
+            return ""
+        return str(txt).encode("latin-1", "ignore").decode("latin-1")
+
+    # --- CABEÇALHO DO RELATÓRIO ---
+    pdf.set_font("helvetica", "B", 16)
+    pdf.cell(0, 8, limpar_texto("SISTEMA DE GESTÃO DE CLÍNICAS"), ln=True, align="C")
+    pdf.set_font("helvetica", "", 10)
+    pdf.cell(
+        0,
+        6,
+        limpar_texto("Relatório Geral de Pacientes Cadastrados"),
+        ln=True,
+        align="C",
+    )
+
+    pdf.set_draw_color(180, 180, 180)
+    pdf.line(10, 26, 200, 26)
+    pdf.ln(8)
+
+    # --- CABEÇALHO DA TABELA ---
+    largura_apelido = 90
+    largura_cpf = 50
+    largura_telefone = 50
+
+    pdf.set_fill_color(240, 240, 240)
+    pdf.set_font("helvetica", "B", 10)
+    pdf.cell(largura_apelido, 8, limpar_texto(" Nome"), border=1, fill=True)
+    pdf.cell(largura_cpf, 8, limpar_texto(" CPF"), border=1, fill=True)
+    pdf.cell(
+        largura_telefone,
+        8,
+        limpar_texto(" Telefone"),
+        border=1,
+        ln=True,
+        fill=True,
+    )
+
+    # --- DADOS DA TABELA ---
+    pdf.set_font("helvetica", "", 9)
+
+    for _, row in df.iterrows():
+        apelido = (
+            limpar_texto(row.get("apelido", ""))
+            if pd.notna(row.get("apelido"))
+            else ""
+        )
+        cpf = (
+            limpar_texto(row.get("CPF", "")) if pd.notna(row.get("CPF")) else ""
+        )
+        telefone = (
+            limpar_texto(row.get("telefone", ""))
+            if pd.notna(row.get("telefone"))
+            else ""
+        )
+
+        if len(apelido) > 45:
+            apelido = apelido[:42] + "..."
+
+        pdf.cell(largura_apelido, 7, f" {apelido}", border=1)
+        pdf.cell(largura_cpf, 7, f" {cpf}", border=1)
+        pdf.cell(largura_telefone, 7, f" {telefone}", border=1, ln=True)
+
+    return bytes(pdf.output())
+
+
+# ==========================================
+# 4. Inicialização do Session State e Funções
+# ==========================================
+if "paciente_selecionada" not in st.session_state:
+    st.session_state.paciente_selecionada = None
+if "update_trigger" not in st.session_state:
     st.session_state.update_trigger = 0
+if "table_key" not in st.session_state:
+    st.session_state.table_key = 0
 
-def limpar_campos():
-    st.session_state.paciente_selecionado_id = None
+
+def limpar_campos_e_selecao():
+    """Reseta a clínica selecionada e força novas chaves para o formulário e a tabela."""
+    st.session_state.paciente_selecionada = None
     st.session_state.update_trigger += 1
+    st.session_state.table_key += 1
 
-# Função auxiliar para ler os dados do Supabase
-def carregar_dados():
-    response = supabase.table("pacientes").select("*").execute()
-    return pd.DataFrame(response.data)
 
-# 3. Formulário de Cadastro e Edição (Create, Update, Delete)
-#st.sidebar.header("Cadastro / Edição")
-st.form("Cadastro / Edição")
+def carregar_dados(pesquisa=""):
+    try:
+        if pesquisa:
+            response = (
+                supabase.table("pacientes")
+                .select("*")
+                .ilike("razao", f"%{pesquisa}%")
+                .execute()
+            )
+        else:
+            response = supabase.table("pacientes").select("*").execute()
+        return pd.DataFrame(response.data)
+    except Exception as e:
+        st.error(f"Erro ao carregar dados: {e}")
+        return pd.DataFrame()
 
-df_dados = carregar_dados()
-paciente_selecionado = None
 
-# Se um item do Dataframe for clicado, preenche o formulário
-if 'selected_rows' in st.session_state and len(st.session_state.selected_rows['selection']['rows']) > 0:
-    idx = st.session_state.selected_rows['selection']['rows'][0]
-    paciente_selecionado = df_dados.iloc[idx]
-    st.session_state.paciente_selecionado_id = paciente_selecionado['codigo']
+def obter_proximo_codigo():
+    """Busca o maior código numérico cadastrado no Supabase e retorna o próximo valor."""
+    try:
+        res = (
+            supabase.table("pacientes")
+            .select("codigo")
+            .order("codigo", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if res.data and len(res.data) > 0:
+            ultimo_codigo = res.data[0]["codigo"]
+            try:
+                return str(int(ultimo_codigo) + 1)
+            except ValueError:
+                return "1"
+        return "1"
+    except Exception:
+        return "1"
 
-# Campos do formulário
-#with st.sidebar.form(key=f"form_cliente_{st.session_state.update_trigger}"):
-with st.form(key=f"form_paciente_{st.session_state.update_trigger}"):
-    #nome = st.text_input("Nome", value=paciente_selecionado['nome'] if paciente_selecionado is not None else "")
-    #email = st.text_input("Email", value=paciente_selecionado['email'] if paciente_selecionado is not None else "")
-    #telefone = st.text_input("Telefone", value=paciente_selecionado['telefone'] if paciente_selecionado is not None else "")
 
-    # 1. Definir proporções (ex: 20% / 80%)
-    col1, col2, col3, col4 = st.columns([1,6,4,2])
-    col5, col6, col7, col8 = st.columns([3,3,2,7])
-    col9, col10, col11, col12, col13 = st.columns([3,3,1,2,2])
-    col14, col15, col16 = st.columns([3,3,3])
+# Modal de Confirmação para Deletar
+@st.dialog("⚠️ Confirmar Exclusão")
+def dialog_confirmar_deletar(codigo_deletar):
+    st.write(f"Deseja realmente deletar o registro **Código {codigo_deletar}**?")
+    col_sim, col_nao = st.columns(2)
 
-    # 2. Usar 'with' para adicionar widgets nas colunas
-    with col1:
-        #codigo = st.text_input("Codigo")
-        codigo = st.text_input("Codigo", value=paciente_selecionado['codigo'] if paciente_selecionado is not None else "")
+    with col_sim:
+        if st.button("Sim", use_container_width=True, type="primary"):
+            try:
+                supabase.table("pacientes").delete().eq("codigo", codigo_deletar).execute()
+                limpar_campos_e_selecao()
+                st.session_state["mensagem_sucesso"] = "Registro removido com sucesso!"
+                st.rerun()
+            except Exception as e:
+                st.error(f"Erro ao deletar registro: {e}")
 
-    with col2:
-        #razao = st.text_input("Razão Social")
-        nome = st.text_input("Nome do Paciente", value=paciente_selecionado['nome'] if paciente_selecionado is not None else "")
-
-    with col3:
-        #fantasia = st.text_input("Nome Fantasia")
-        apelido = st.text_input("Apelido", value=paciente_selecionado['apelido'] if paciente_selecionado is not None else "")
-
-    with col4:
-        #data_fundacao = st.text_input("Data de Fundação")
-        data_nascimento = st.text_input("Data de Nascimento", value=paciente_selecionado['data_nascimento'] if paciente_selecionado is not None else "")
-
-    with col5:
-        #cnpj = st.text_input("CNPJ")
-        cpf = st.text_input("CPF", value=paciente_selecionado['cpf'] if paciente_selecionado is not None else "")
-
-    with col6:
-        #inscricao = st.text_input("Inscrição Estadual")
-        rg = st.text_input("RG", value=paciente_selecionado['rg'] if paciente_selecionado is not None else "")
-
-    with col7:
-        #cep = st.text_input("CEP")
-        cep = st.text_input("CEP", value=paciente_selecionado['cep'] if paciente_selecionado is not None else "")
-
-    with col8:
-        #endereco = st.text_input("Endereço")
-        endereco = st.text_input("Endereço", value=paciente_selecionado['endereco'] if paciente_selecionado is not None else "")
-
-    with col9:
-        #bairro = st.text_input("Bairro")
-        bairro = st.text_input("Bairro", value=paciente_selecionado['bairro'] if paciente_selecionado is not None else "")
-
-    with col10:
-        #cidade = st.text_input("Cidade")
-        cidade = st.text_input("Cidade", value=paciente_selecionado['cidade'] if paciente_selecionado is not None else "")
-
-    with col11:
-        #estado = st.text_input("Estado")
-        estado = st.text_input("Estado", value=paciente_selecionado['estado'] if paciente_selecionado is not None else "")
-
-    with col12:
-        #telefone = st.text_input("Telefone")
-        telefone = st.text_input("Telefone", value=paciente_selecionado['telefone'] if paciente_selecionado is not None else "")
-
-    with col13:
-        #telefone1 = st.text_input("Telefone1")
-        telefone1 = st.text_input("Telefone1", value=paciente_selecionado['telefone'] if paciente_selecionado is not None else "")
-
-    with col14:
-        #email = st.text_input("E-mail")
-        contato = st.text_input("Contato", value=paciente_selecionado['contato'] if paciente_selecionado is not None else "")
-
-    with col15:
-        #site = st.text_input("Site")
-        email = st.text_input("E-mail", value=paciente_selecionado['email'] if paciente_selecionado is not None else "")
-
-    with col16:
-        #instagram = st.text_input("Instagram")
-        profissao = st.text_input("Profissão", value=paciente_selecionado['profissao'] if paciente_selecionado is not None else "")
-
-    col17, col18, col19, col20 = st.columns(4)
-
-    # Botão CREATE
-    submit_criar = col17.form_submit_button("➕ Inserir")
-    # Botão UPDATE
-    submit_atualizar = col18.form_submit_button("✏️ Atualizar")
-    # Botão DELETE
-    submit_deletar = col19.form_submit_button("️🗑️ Deletar")
-    # Botão LIMPAR
-    submit_limpar = col20.form_submit_button("️🧹️ Limpar")
-
-# Lógica dos botões
-if submit_criar and nome:
-    if nome:
-        try:
-            #data = supabase.table("clientes").insert({"nome": nome, "email": email, "telefone": telefone}).execute()
-            data = supabase.table("pacientes").insert({"codigo": codigo, "nome": nome, "apelido": apelido, "endereco": endereco,
-                                                        "cep": cep, "bairro": bairro, "cidade": cidade, "estado": estado,
-                                                        "telefone": telefone,
-                                                        "telefone1": telefone1, "cpf": cpf, "rg": rg,
-                                                        "data_nascimento": data_nascimento, "email": email, "contato": contato,
-                                                        "profissao": profissao}).execute()
-            st.success("Paciente cadastrado com sucesso!")
-            limpar_campos()
+    with col_nao:
+        if st.button("Não", use_container_width=True):
             st.rerun()
-        except Exception as e:
-            st.error(f"Erro: {e}")
-    else:
-        st.warning("Preencha pelo menos a Nome.")
-
-if submit_atualizar and st.session_state.paciente_selecionado_id and nome:
-    #data = supabase.table("clientes").update({"nome": nome, "email": email, "telefone": telefone}).eq("id",
-    #                                                                                                  st.session_state.paciente_selecionado_id).execute()
-    if codigo:
-        try:
-            supabase.table("pacientes").update({"codigo": codigo, "nome": nome, "apelido": apelido, "endereco": endereco,
-                                                "cep": cep, "bairro": bairro, "cidade": cidade, "estado": estado,
-                                                "telefone": telefone,
-                                                "telefone1": telefone1, "cpf": cpf, "rg": rg,
-                                                "data_nascimento": data_nascimento, "email": email, "contato": contato,
-                                                "profissao": profissao}).eq("codigo", st.session_state.paciente_selecionado_id).execute()
-
-            st.success("Paciente atualizado com sucesso!")
-            limpar_campos()
-            st.rerun()
-        except Exception as e:
-            st.error(f"Erro: {e}")
-    else:
-        st.warning("Selecione um Paciente para atualizar.")
-
-if submit_deletar and st.session_state.paciente_selecionado_id:
-    #data = supabase.table("clientes").delete().eq("id", st.session_state.paciente_selecionado_id).execute()
-    if codigo:
-        try:
-            supabase.table("pacientes").delete().eq("codigo", st.session_state.paciente_selecionado_id).execute()
-            st.success("Paciente deletada com sucesso!")
-            limpar_campos()
-            st.rerun()
-        except Exception as e:
-            st.error(f"Erro: {e}")
-    else:
-        st.warning("Selecione uma Paciente para deletar.")
-
-if submit_limpar and st.session_state.paciente_selecionado_id:
-    #data = supabase.table("clientes").delete().eq("id", st.session_state.paciente_selecionado_id).execute()
-    if codigo:
-        try:
-            #supabase.table("pacientes").delete().eq("codigo", st.session_state.paciente_selecionado_id).execute()
-            #st.success("paciente deletada com sucesso!")
-            limpar_campos()
-            st.rerun()
-        except Exception as e:
-            st.error(f"Erro: {e}")
-    #else:
-    #    st.warning("Selecione uma paciente para deletar.")
 
 
-# 4. Read (Exibição no Dataframe)3
+# ==========================================
+# EXIBIÇÃO DA MENSAGEM TEMPORÁRIA CENTRALIZADA
+# ==========================================
+if "mensagem_sucesso" in st.session_state:
+    mensagem = st.session_state.pop("mensagem_sucesso")
+    container_msg = st.empty()
 
-st.subheader("Lista de pacientes Cadastrados")
-
-if not df_dados.empty:
-    filtro = st.text_input("Filtrar por Nome:")
-    campos_tabela = ['nome', 'apelido']
-    if filtro:
-        df_relatorio = df_dados[df_dados['nome'].str.contains(filtro, case=False, na=False)][campos_tabela]
-    else:
-        df_relatorio = df_dados[df_dados['nome'].str.contains('Null', case=False, na=False)][campos_tabela]
-
-    # Seleção do dataframe (clicar no item seleciona ele)
-    event = st.dataframe(
-        df_relatorio,
-        use_container_width=True,
-        on_select="rerun",
-        selection_mode="single-row",
-        key="selected_rows"
-    )
-    #st.dataframe(df_relatorio, use_container_width=True)
-
-
-    # Função para gerar PDF em memória
-    def gerar_pdf(dataframe):
-        buffer = io.BytesIO()
-        doc = SimpleDocTemplate(buffer, pagesize=letter)
-        elements = []
-
-        data_table = [dataframe.columns.tolist()] + dataframe.values.tolist()
-
-        t = Table(data_table)
-        t.setStyle(TableStyle([
-            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-        ]))
-        elements.append(t)
-        doc.build(elements)
-        buffer.seek(0)
-        return buffer.getvalue()
-
-
-    pdf_data = gerar_pdf(df_relatorio)
-
-    col_csv, col_pdf = st.columns(2)
-
-    # Botão para download em CSV
-    csv = df_relatorio.to_csv(index=False).encode('utf-8')
-    col_csv.download_button(
-        label="📄 Baixar Relatório em CSV",
-        data=csv,
-        file_name='relatorio_pacientes.csv',
-        mime='text/csv',
+    # Renderiza a mensagem estilo popup no topo/centro
+    container_msg.markdown(
+        f'<div class="mensagem-centralizada">✅ {mensagem}</div>',
+        unsafe_allow_html=True
     )
 
-    # Botão para download em PDF
-    col_pdf.download_button(
-        label="📥 Baixar Relatório em PDF",
-        data=pdf_data,
-        file_name='relatorio_pacientes.pdf',
-        mime='application/pdf',
+    # Aguarda 3 segundos e remove do DOM
+    time.sleep(3)
+    container_msg.empty()
+
+paciente_sel = st.session_state.paciente_selecionada
+id_ativo = paciente_sel.get("codigo") if paciente_sel else None
+
+st.subheader("🏥 Cadastro de Pacientes")
+
+# ==========================================
+# 5. Interface Gráfica em Duas Colunas
+# ==========================================
+col_esquerda, col_direita = st.columns([1.7, 1.3])
+
+# ------------------------------------------
+# COLUNA ESQUERDA: Formulário de Cadastro e Edição
+# ------------------------------------------
+with col_esquerda:
+    if id_ativo:
+        st.markdown(f"##### ✏️ Editando Pacientes: Código {id_ativo}")
+        codigo_exibicao = str(id_ativo)
+    else:
+        st.markdown("##### ➕ Novo Paciente")
+        codigo_exibicao = obter_proximo_codigo()
+
+    with st.form(key=f"form_cliente_{st.session_state.update_trigger}"):
+
+        # Linha 1: Dados Principais
+        col1, col2, col3 = st.columns([1, 2.5, 2])
+        with col1:
+            codigo = st.text_input(
+                "Código", value=codigo_exibicao, disabled=True, help="Gerado automaticamente"
+            )
+        with col2:
+            razao = st.text_input(
+                "Nome", value=paciente_sel["nome"] if paciente_sel else ""
+            )
+        with col3:
+            apelido = st.text_input(
+                "Apelido", value=paciente_sel["apelido"] if paciente_sel else ""
+            )
+
+        # Linha 2: Documentações e Fundação
+        col4, col5, col6 = st.columns([2, 2, 1.5])
+        with col4:
+            cpf = st.text_input(
+                "cpf", value=paciente_sel["cpf"] if paciente_sel else ""
+            )
+        with col5:
+            inscricao = st.text_input(
+                "RG.", value=paciente_sel["rg"] if paciente_sel else ""
+            )
+        with col6:
+            data_inicial = None
+            if paciente_sel and paciente_sel.get("data_nascimento"):
+                try:
+                    data_inicial = pd.to_datetime(
+                        paciente_sel["data_nascimento"], dayfirst=True
+                    ).date()
+                except Exception:
+                    data_inicial = None
+
+            data_fundacao_val = st.date_input(
+                "Dt.Nascimento", value=data_inicial, format="DD/MM/YYYY"
+            )
+
+        # Linha 3: Localização (Endereço)
+        col7, col8, col9 = st.columns([1.5, 3.5, 1.2])
+        with col7:
+            cep = st.text_input(
+                "CEP", value=paciente_sel["cep"] if paciente_sel else ""
+            )
+        with col8:
+            endereco = st.text_input(
+                "Endereço", value=paciente_sel["endereco"] if paciente_sel else ""
+            )
+        with col9:
+            estado = st.text_input(
+                "Estado", value=paciente_sel["estado"] if paciente_sel else ""
+            )
+
+        # Linha 4: Cidade e Bairro
+        col10, col11 = st.columns([1, 1])
+        with col10:
+            bairro = st.text_input(
+                "Bairro", value=paciente_sel["bairro"] if paciente_sel else ""
+            )
+        with col11:
+            cidade = st.text_input(
+                "Cidade", value=paciente_sel["cidade"] if paciente_sel else ""
+            )
+
+        # Linha 5: Contato
+        col12, col13, col14 = st.columns([1.2, 1.2, 2.1])
+        with col12:
+            telefone = st.text_input(
+                "Telefone", value=paciente_sel["telefone"] if paciente_sel else ""
+            )
+        with col13:
+            telefone1 = st.text_input(
+                "Telefone 2",
+                value=(
+                    paciente_sel["telefone1"]
+                    if paciente_sel and "telefone1" in paciente_sel
+                    else ""
+                ),
+            )
+        with col14:
+            email = st.text_input(
+                "E-mail", value=paciente_sel["email"] if paciente_sel else ""
+            )
+
+        # Linha 6: Links / Redes Sociais
+        col14_2, col14_3 = st.columns([1, 1])
+        with col14_2:
+            site = st.text_input(
+                "Site", value=paciente_sel["site"] if paciente_sel else ""
+            )
+        with col14_3:
+            instagram = st.text_input(
+                "Instagram", value=paciente_sel["instagram"] if paciente_sel else ""
+            )
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        # Botões de ação do formulário
+        col15, col16, col17, col18 = st.columns(4)
+        submit_criar = col15.form_submit_button(
+            "➕ Inserir", use_container_width=True
+        )
+        submit_atualizar = col16.form_submit_button(
+            "✏️ Atualizar", use_container_width=True
+        )
+        submit_deletar = col17.form_submit_button(
+            "🗑️ Deletar", use_container_width=True
+        )
+        submit_limpar = col18.form_submit_button(
+            "🧹 Limpar", use_container_width=True
+        )
+
+# ------------------------------------------
+# COLUNA DIREITA: Pesquisa e Seleção
+# ------------------------------------------
+with col_direita:
+    st.markdown("##### 🔍 Localizar Paciente")
+    filtro = st.text_input(
+        "Filtrar por Nome:", placeholder="Digite para buscar..."
     )
-else:
-    st.info("Nenhum Paciente cadastrado.")
+    df_dados = carregar_dados(filtro)
 
-# 5. Relatório Interativo com Filtro e Impressão/Download
-#st.subheader("Relatório e Exportação")
+    if not df_dados.empty:
+        colunas_exibicao = [
+            c for c in ["codigo", "razao", "apelido"] if c in df_dados.columns
+        ]
 
-#if not df_dados.empty:
-#    filtro = st.text_input("Filtrar por Razão Social:")
-#    if filtro:
-#        df_relatorio = df_dados[df_dados['razao'].str.contains(filtro, case=False, na=False)]
-#    else:
-#        df_relatorio = df_dados
-#
-#    st.dataframe(df_relatorio, use_container_width=True)
-#
-#
-#    # Função para gerar PDF em memória
-#    def gerar_pdf(dataframe):
-#        buffer = io.BytesIO()
-#        doc = SimpleDocTemplate(buffer, pagesize=letter)
-#        elements = []
-#
-#        data_table = [dataframe.columns.tolist()] + dataframe.values.tolist()
-#        t = Table(data_table)
-#        t.setStyle(TableStyle([
-#            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-#            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-#            ('ALIGN', (0, 0), (-1, -1), 'LEFT'),
-#            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-#            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
-#            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
-#            ('GRID', (0, 0), (-1, -1), 1, colors.black)
-#        ]))
-#        elements.append(t)
-#        doc.build(elements)
-#        buffer.seek(0)
-#        return buffer.getvalue()
-#
-#
-#    pdf_data = gerar_pdf(df_relatorio)
-#
-#    col_csv, col_pdf = st.columns(2)
-#
-#    # Botão para download em CSV
-#    csv = df_relatorio.to_csv(index=False).encode('utf-8')
-#    col_csv.download_button(
-#        label="📄 Baixar Relatório em CSV",
-#        data=csv,
-#        file_name='relatorio_clientes.csv',
-#        mime='text/csv',
-#    )
-#
-#    # Botão para download em PDF
-#    col_pdf.download_button(
-#        label="📥 Baixar Relatório em PDF",
-#        data=pdf_data,
-#        file_name='relatorio_clientes.pdf',
-#        mime='application/pdf',
-#    )
+        evento_selecao = st.dataframe(
+            df_dados[colunas_exibicao],
+            selection_mode="single-row",
+            on_select="rerun",
+            use_container_width=True,
+            key=f"tabela_pacientes_{st.session_state.table_key}",
+            height=420,
+        )
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        try:
+            pdf_data = gerar_relatorio_pdf(df_dados)
+            st.download_button(
+                label="📄 Gerar Relatório PDF",
+                data=pdf_data,
+                file_name="relatorio_pacientes.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+            )
+        except Exception as e:
+            st.error(f"Erro ao preparar arquivo PDF: {e}")
+
+        linhas_selecionadas = evento_selecao.selection.get("rows", [])
+        if linhas_selecionadas:
+            indice_selecionado = linhas_selecionadas[0]
+            dados_linha = df_dados.iloc[indice_selecionado].to_dict()
+
+            if st.session_state.paciente_selecionada != dados_linha:
+                st.session_state.paciente_selecionada = dados_linha
+                st.rerun()
+    else:
+        st.info("Nenhuma clínica cadastrada ou encontrada.")
+
+# ==========================================
+# 6. Lógica de Persistência (CRUD) e Ações
+# ==========================================
+data_fundacao_str = (
+    data_fundacao_val.strftime("%d/%m/%Y") if data_fundacao_val else None
+)
+
+payload = {
+    "codigo": codigo,
+    "nome": nome,
+    "apelido": apelido,
+    "endereco": endereco,
+    "cep": cep,
+    "bairro": bairro,
+    "cidade": cidade,
+    "estado": estado,
+    "telefone": telefone,
+    "telefone1": telefone1,
+    "contato": contato,
+    "cpf": cpf,
+    "rg": rg,
+    "data_nascimento": data_fundacao_str,
+    "email": email,
+    "profissao": profissao,
+    "origem": origem,
+    "instagram": instagram,
+}
+
+# --- INSERIR ---
+if submit_criar:
+    if razao:
+        try:
+            supabase.table("pacientes").insert(payload).execute()
+            st.session_state["mensagem_sucesso"] = f"Clínica cadastrada com sucesso sob o Código {codigo}!"
+            limpar_campos_e_selecao()
+            st.rerun()
+        except Exception as e:
+            st.error(f"Erro ao inserir dados no banco: {e}")
+    else:
+        st.warning("Preencha obrigatoriamente o campo 'Razão Social'.")
+
+# --- ATUALIZAR ---
+if submit_atualizar:
+    if id_ativo:
+        try:
+            supabase.table("pacientes").update(payload).eq("codigo", id_ativo).execute()
+            st.session_state["mensagem_sucesso"] = "Registro atualizado com sucesso!"
+            limpar_campos_e_selecao()
+            st.rerun()
+        except Exception as e:
+            st.error(f"Erro ao atualizar registro: {e}")
+    else:
+        st.warning("Selecione uma clínica na tabela antes de tentar atualizar.")
+
+# --- DELETAR ---
+if submit_deletar:
+    if id_ativo:
+        dialog_confirmar_deletar(id_ativo)
+    else:
+        st.warning("Selecione uma clínica na tabela antes de tentar deletar.")
+
+# --- LIMPAR ---
+if submit_limpar:
+    limpar_campos_e_selecao()
+    st.rerun()
