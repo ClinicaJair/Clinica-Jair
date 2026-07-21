@@ -262,7 +262,7 @@ with col_esquerda:
                 "Código", value=codigo_exibicao, disabled=True, help="Gerado automaticamente"
             )
         with col2:
-            razao = st.text_input(
+            nome = st.text_input(
                 "Nome", value=paciente_sel["nome"] if paciente_sel else ""
             )
         with col3:
@@ -274,10 +274,10 @@ with col_esquerda:
         col4, col5, col6 = st.columns([2, 2, 1.5])
         with col4:
             cpf = st.text_input(
-                "cpf", value=paciente_sel["cpf"] if paciente_sel else ""
+                "CPF", value=paciente_sel["cpf"] if paciente_sel else ""
             )
         with col5:
-            inscricao = st.text_input(
+            rg = st.text_input(
                 "RG.", value=paciente_sel["rg"] if paciente_sel else ""
             )
         with col6:
@@ -310,7 +310,7 @@ with col_esquerda:
             )
 
         # Linha 4: Cidade e Bairro
-        col10, col11 = st.columns([1, 1])
+        col10, col11, col12 = st.columns([1, 1, 1])
         with col10:
             bairro = st.text_input(
                 "Bairro", value=paciente_sel["bairro"] if paciente_sel else ""
@@ -320,13 +320,18 @@ with col_esquerda:
                 "Cidade", value=paciente_sel["cidade"] if paciente_sel else ""
             )
 
-        # Linha 5: Contato
-        col12, col13, col14 = st.columns([1.2, 1.2, 2.1])
         with col12:
+            profissao = st.text_input(
+                "Profissao", value=paciente_sel["profissao"] if paciente_sel else ""
+            )
+
+        # Linha 5: Contato
+        col13, col14, col15 = st.columns([1.2, 1.2, 2.1])
+        with col13:
             telefone = st.text_input(
                 "Telefone", value=paciente_sel["telefone"] if paciente_sel else ""
             )
-        with col13:
+        with col14:
             telefone1 = st.text_input(
                 "Telefone 2",
                 value=(
@@ -335,18 +340,23 @@ with col_esquerda:
                     else ""
                 ),
             )
-        with col14:
-            email = st.text_input(
-                "E-mail", value=paciente_sel["email"] if paciente_sel else ""
+        with col15:
+            contato = st.text_input(
+                "Contato", value=paciente_sel["contato"] if paciente_sel else ""
             )
 
         # Linha 6: Links / Redes Sociais
-        col14_2, col14_3 = st.columns([1, 1])
-        with col14_2:
-            site = st.text_input(
-                "Site", value=paciente_sel["site"] if paciente_sel else ""
+        col15_2, col15_3, col15_4 = st.columns([1, 1, 1])
+        with col15_2:
+            origem = st.text_input(
+                "Origem", value=paciente_sel["origem"] if paciente_sel else ""
             )
-        with col14_3:
+
+        with col15_3:
+            email = st.text_input(
+                "E-mail", value=paciente_sel["email"] if paciente_sel else ""
+            )
+        with col15_4:
             instagram = st.text_input(
                 "Instagram", value=paciente_sel["instagram"] if paciente_sel else ""
             )
@@ -354,17 +364,17 @@ with col_esquerda:
         st.markdown("<br>", unsafe_allow_html=True)
 
         # Botões de ação do formulário
-        col15, col16, col17, col18 = st.columns(4)
-        submit_criar = col15.form_submit_button(
+        col16, col17, col18, col19 = st.columns(4)
+        submit_criar = col16.form_submit_button(
             "➕ Inserir", use_container_width=True
         )
-        submit_atualizar = col16.form_submit_button(
+        submit_atualizar = col17.form_submit_button(
             "✏️ Atualizar", use_container_width=True
         )
-        submit_deletar = col17.form_submit_button(
+        submit_deletar = col18.form_submit_button(
             "🗑️ Deletar", use_container_width=True
         )
-        submit_limpar = col18.form_submit_button(
+        submit_limpar = col19.form_submit_button(
             "🧹 Limpar", use_container_width=True
         )
 
