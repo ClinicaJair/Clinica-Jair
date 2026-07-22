@@ -1,5 +1,7 @@
 import io
 import time
+import datetime
+from dateutil.relativedelta import relativedelta
 import pandas as pd
 import streamlit as st
 from fpdf import FPDF
@@ -194,6 +196,16 @@ def obter_proximo_codigo():
         return "1"
 
 
+def obter_valor(dicionario, chave):
+    """Retorna o valor tratado do dicionário garantindo que NaN / None vire string vazia."""
+    if not dicionario or chave not in dicionario:
+        return ""
+    val = dicionario[chave]
+    if pd.isna(val) or val is None:
+        return ""
+    return str(val)
+
+
 # Modal de Confirmação para Deletar
 @st.dialog("⚠️ Confirmar Exclusão")
 def dialog_confirmar_deletar(codigo_deletar):
@@ -222,13 +234,11 @@ if "mensagem_sucesso" in st.session_state:
     mensagem = st.session_state.pop("mensagem_sucesso")
     container_msg = st.empty()
 
-    # Renderiza a mensagem estilo popup no topo/centro
     container_msg.markdown(
         f'<div class="mensagem-centralizada">✅ {mensagem}</div>',
         unsafe_allow_html=True
     )
 
-    # Aguarda 3 segundos e remove do DOM
     time.sleep(3)
     container_msg.empty()
 
@@ -263,92 +273,96 @@ with col_esquerda:
             )
         with col2:
             razao = st.text_input(
-                "Razão Social", value=clinica_sel["razao"] if clinica_sel else ""
+                "Razão Social", value=obter_valor(clinica_sel, "razao")
             )
         with col3:
             fantasia = st.text_input(
-                "Nome Fantasia", value=clinica_sel["fantasia"] if clinica_sel else ""
+                "Nome Fantasia", value=obter_valor(clinica_sel, "fantasia")
             )
 
         # Linha 2: Documentações e Fundação
         col4, col5, col6 = st.columns([2, 2, 1.5])
         with col4:
             cnpj = st.text_input(
-                "CNPJ", value=clinica_sel["cnpj"] if clinica_sel else ""
+                "CNPJ", value=obter_valor(clinica_sel, "cnpj")
             )
         with col5:
             inscricao = st.text_input(
-                "Insc. Estadual", value=clinica_sel["inscricao"] if clinica_sel else ""
+                "Insc. Estadual", value=obter_valor(clinica_sel, "inscricao")
             )
         with col6:
+            min_data = datetime.date(1900, 1, 1)
+            max_data = datetime.date.today() + relativedelta(months=3)
+
             data_inicial = None
             if clinica_sel and clinica_sel.get("data_fundacao"):
-                try:
-                    data_inicial = pd.to_datetime(
-                        clinica_sel["data_fundacao"], dayfirst=True
-                    ).date()
-                except Exception:
-                    data_inicial = None
+                val_data = clinica_sel.get("data_fundacao")
+                if pd.notna(val_data):
+                    try:
+                        dt_convertida = pd.to_datetime(val_data, dayfirst=True).date()
+                        if min_data <= dt_convertida <= max_data:
+                            data_inicial = dt_convertida
+                    except Exception:
+                        data_inicial = None
 
             data_fundacao_val = st.date_input(
-                "Fundação", value=data_inicial, format="DD/MM/YYYY"
+                "Fundação",
+                value=data_inicial,
+                min_value=min_data,
+                max_value=max_data,
+                format="DD/MM/YYYY"
             )
 
         # Linha 3: Localização (Endereço)
         col7, col8, col9 = st.columns([1.5, 3.5, 1.2])
         with col7:
             cep = st.text_input(
-                "CEP", value=clinica_sel["cep"] if clinica_sel else ""
+                "CEP", value=obter_valor(clinica_sel, "cep")
             )
         with col8:
             endereco = st.text_input(
-                "Endereço", value=clinica_sel["endereco"] if clinica_sel else ""
+                "Endereço", value=obter_valor(clinica_sel, "endereco")
             )
         with col9:
             estado = st.text_input(
-                "Estado", value=clinica_sel["estado"] if clinica_sel else ""
+                "Estado", value=obter_valor(clinica_sel, "estado")
             )
 
         # Linha 4: Cidade e Bairro
         col10, col11 = st.columns([1, 1])
         with col10:
             bairro = st.text_input(
-                "Bairro", value=clinica_sel["bairro"] if clinica_sel else ""
+                "Bairro", value=obter_valor(clinica_sel, "bairro")
             )
         with col11:
             cidade = st.text_input(
-                "Cidade", value=clinica_sel["cidade"] if clinica_sel else ""
+                "Cidade", value=obter_valor(clinica_sel, "cidade")
             )
 
         # Linha 5: Contato
         col12, col13, col14 = st.columns([1.2, 1.2, 2.1])
         with col12:
             telefone = st.text_input(
-                "Telefone", value=clinica_sel["telefone"] if clinica_sel else ""
+                "Telefone", value=obter_valor(clinica_sel, "telefone")
             )
         with col13:
             telefone1 = st.text_input(
-                "Telefone 2",
-                value=(
-                    clinica_sel["telefone1"]
-                    if clinica_sel and "telefone1" in clinica_sel
-                    else ""
-                ),
+                "Telefone 2", value=obter_valor(clinica_sel, "telefone1")
             )
         with col14:
             email = st.text_input(
-                "E-mail", value=clinica_sel["email"] if clinica_sel else ""
+                "E-mail", value=obter_valor(clinica_sel, "email")
             )
 
         # Linha 6: Links / Redes Sociais
         col14_2, col14_3 = st.columns([1, 1])
         with col14_2:
             site = st.text_input(
-                "Site", value=clinica_sel["site"] if clinica_sel else ""
+                "Site", value=obter_valor(clinica_sel, "site")
             )
         with col14_3:
             instagram = st.text_input(
-                "Instagram", value=clinica_sel["instagram"] if clinica_sel else ""
+                "Instagram", value=obter_valor(clinica_sel, "instagram")
             )
 
         st.markdown("<br>", unsafe_allow_html=True)

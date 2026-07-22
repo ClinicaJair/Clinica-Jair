@@ -1,5 +1,7 @@
 import io
 import time
+import datetime
+from dateutil.relativedelta import relativedelta
 import pandas as pd
 import streamlit as st
 from fpdf import FPDF
@@ -275,8 +277,18 @@ with col_esquerda:
                 except Exception:
                     data_inicial = None
 
+            # Limites de seleção do calendário:
+            # Data mínima: 01/01/1900
+            # Data máxima: Data atual + 3 meses
+            min_data = datetime.date(1900, 1, 1)
+            max_data = datetime.date.today() + relativedelta(months=3)
+
             data_nascimento_val = st.date_input(
-                "Dt.Nascimento", value=data_inicial, format="DD/MM/YYYY"
+                "Dt.Nascimento",
+                value=data_inicial,
+                min_value=min_data,
+                max_value=max_data,
+                format="DD/MM/YYYY"
             )
 
         # Linha 2: Documentações

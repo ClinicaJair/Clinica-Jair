@@ -1,5 +1,7 @@
 import io
 import time
+import datetime
+from dateutil.relativedelta import relativedelta
 import pandas as pd
 import streamlit as st
 from fpdf import FPDF
@@ -78,7 +80,7 @@ def gerar_relatorio_pdf(df):
 
     # --- CABEÇALHO DO RELATÓRIO ---
     pdf.set_font("helvetica", "B", 16)
-    pdf.cell(0, 8, limpar_texto("SISTEMA DE GESTÃO DE CLÍNICAS"), ln=True, align="C")
+    pdf.cell(0, 8, limpar_texto("SISTEMA DE GESTÃO DE PACIENTES"), ln=True, align="C")
     pdf.set_font("helvetica", "", 10)
     pdf.cell(
         0,
@@ -93,13 +95,13 @@ def gerar_relatorio_pdf(df):
     pdf.ln(8)
 
     # --- CABEÇALHO DA TABELA ---
-    largura_apelido = 90
+    largura_nome = 90
     largura_cpf = 50
     largura_telefone = 50
 
     pdf.set_fill_color(240, 240, 240)
     pdf.set_font("helvetica", "B", 10)
-    pdf.cell(largura_apelido, 8, limpar_texto(" Nome"), border=1, fill=True)
+    pdf.cell(largura_nome, 8, limpar_texto(" Nome"), border=1, fill=True)
     pdf.cell(largura_cpf, 8, limpar_texto(" CPF"), border=1, fill=True)
     pdf.cell(
         largura_telefone,
@@ -114,13 +116,15 @@ def gerar_relatorio_pdf(df):
     pdf.set_font("helvetica", "", 9)
 
     for _, row in df.iterrows():
-        apelido = (
-            limpar_texto(row.get("apelido", ""))
-            if pd.notna(row.get("apelido"))
+        nome_val = (
+            limpar_texto(row.get("nome", row.get("razao", "")))
+            if pd.notna(row.get("nome", row.get("razao")))
             else ""
         )
         cpf = (
-            limpar_texto(row.get("CPF", "")) if pd.notna(row.get("CPF")) else ""
+            limpar_texto(row.get("cpf", row.get("CPF", "")))
+            if pd.notna(row.get("cpf", row.get("CPF")))
+            else ""
         )
         telefone = (
             limpar_texto(row.get("telefone", ""))
@@ -128,10 +132,10 @@ def gerar_relatorio_pdf(df):
             else ""
         )
 
-        if len(apelido) > 45:
-            apelido = apelido[:42] + "..."
+        if len(nome_val) > 45:
+            nome_val = nome_val[:42] + "..."
 
-        pdf.cell(largura_apelido, 7, f" {apelido}", border=1)
+        pdf.cell(largura_nome, 7, f" {nome_val}", border=1)
         pdf.cell(largura_cpf, 7, f" {cpf}", border=1)
         pdf.cell(largura_telefone, 7, f" {telefone}", border=1, ln=True)
 
@@ -150,7 +154,7 @@ if "table_key" not in st.session_state:
 
 
 def limpar_campos_e_selecao():
-    """Reseta a clínica selecionada e força novas chaves para o formulário e a tabela."""
+    """Reseta o paciente selecionado e força novas chaves para o formulário e a tabela."""
     st.session_state.paciente_selecionada = None
     st.session_state.update_trigger += 1
     st.session_state.table_key += 1
@@ -162,7 +166,7 @@ def carregar_dados(pesquisa=""):
             response = (
                 supabase.table("pacientes")
                 .select("*")
-                .ilike("razao", f"%{pesquisa}%")
+                .ilike("nome", f"%{pesquisa}%")
                 .execute()
             )
         else:
@@ -222,13 +226,11 @@ if "mensagem_sucesso" in st.session_state:
     mensagem = st.session_state.pop("mensagem_sucesso")
     container_msg = st.empty()
 
-    # Renderiza a mensagem estilo popup no topo/centro
     container_msg.markdown(
         f'<div class="mensagem-centralizada">✅ {mensagem}</div>',
         unsafe_allow_html=True
     )
 
-    # Aguarda 3 segundos e remove do DOM
     time.sleep(3)
     container_msg.empty()
 
@@ -247,7 +249,7 @@ col_esquerda, col_direita = st.columns([1.7, 1.3])
 # ------------------------------------------
 with col_esquerda:
     if id_ativo:
-        st.markdown(f"##### ✏️ Editando Pacientes: Código {id_ativo}")
+        st.markdown(f"##### ✏️ Editando Paciente: Código {id_ativo}")
         codigo_exibicao = str(id_ativo)
     else:
         st.markdown("##### ➕ Novo Paciente")
@@ -263,22 +265,22 @@ with col_esquerda:
             )
         with col2:
             nome = st.text_input(
-                "Nome", value=paciente_sel["nome"] if paciente_sel else ""
+                "Nome", value=paciente_sel.get("nome", "") if paciente_sel else ""
             )
         with col3:
             apelido = st.text_input(
-                "Apelido", value=paciente_sel["apelido"] if paciente_sel else ""
+                "Apelido", value=paciente_sel.get("apelido", "") if paciente_sel else ""
             )
 
-        # Linha 2: Documentações e Fundação
+        # Linha 2: Documentações e Data de Nascimento
         col4, col5, col6 = st.columns([2, 2, 1.5])
         with col4:
             cpf = st.text_input(
-                "CPF", value=paciente_sel["cpf"] if paciente_sel else ""
+                "CPF", value=paciente_sel.get("cpf", "") if paciente_sel else ""
             )
         with col5:
             rg = st.text_input(
-                "RG.", value=paciente_sel["rg"] if paciente_sel else ""
+                "RG", value=paciente_sel.get("rg", "") if paciente_sel else ""
             )
         with col6:
             data_inicial = None
@@ -290,75 +292,79 @@ with col_esquerda:
                 except Exception:
                     data_inicial = None
 
-            data_fundacao_val = st.date_input(
-                "Dt.Nascimento", value=data_inicial, format="DD/MM/YYYY"
+            # Limites de seleção do calendário:
+            # Data mínima: 1900
+            # Data máxima: Data atual + 3 meses
+            min_data = datetime.date(1900, 1, 1)
+            max_data = datetime.date.today() + relativedelta(months=3)
+
+            data_nascimento_val = st.date_input(
+                "Dt.Nascimento",
+                value=data_inicial,
+                min_value=min_data,
+                max_value=max_data,
+                format="DD/MM/YYYY"
             )
 
         # Linha 3: Localização (Endereço)
         col7, col8, col9 = st.columns([1.5, 3.5, 1.2])
         with col7:
             cep = st.text_input(
-                "CEP", value=paciente_sel["cep"] if paciente_sel else ""
+                "CEP", value=paciente_sel.get("cep", "") if paciente_sel else ""
             )
         with col8:
             endereco = st.text_input(
-                "Endereço", value=paciente_sel["endereco"] if paciente_sel else ""
+                "Endereço", value=paciente_sel.get("endereco", "") if paciente_sel else ""
             )
         with col9:
             estado = st.text_input(
-                "Estado", value=paciente_sel["estado"] if paciente_sel else ""
+                "Estado", value=paciente_sel.get("estado", "") if paciente_sel else ""
             )
 
-        # Linha 4: Cidade e Bairro
+        # Linha 4: Bairro, Cidade e Profissão
         col10, col11, col12 = st.columns([1, 1, 1])
         with col10:
             bairro = st.text_input(
-                "Bairro", value=paciente_sel["bairro"] if paciente_sel else ""
+                "Bairro", value=paciente_sel.get("bairro", "") if paciente_sel else ""
             )
         with col11:
             cidade = st.text_input(
-                "Cidade", value=paciente_sel["cidade"] if paciente_sel else ""
+                "Cidade", value=paciente_sel.get("cidade", "") if paciente_sel else ""
             )
-
         with col12:
             profissao = st.text_input(
-                "Profissao", value=paciente_sel["profissao"] if paciente_sel else ""
+                "Profissão", value=paciente_sel.get("profissao", "") if paciente_sel else ""
             )
 
         # Linha 5: Contato
         col13, col14, col15 = st.columns([1.2, 1.2, 2.1])
         with col13:
             telefone = st.text_input(
-                "Telefone", value=paciente_sel["telefone"] if paciente_sel else ""
+                "Telefone", value=paciente_sel.get("telefone", "") if paciente_sel else ""
             )
         with col14:
             telefone1 = st.text_input(
                 "Telefone 2",
-                value=(
-                    paciente_sel["telefone1"]
-                    if paciente_sel and "telefone1" in paciente_sel
-                    else ""
-                ),
+                value=paciente_sel.get("telefone1", "") if paciente_sel else "",
             )
         with col15:
             contato = st.text_input(
-                "Contato", value=paciente_sel["contato"] if paciente_sel else ""
+                "Contato", value=paciente_sel.get("contato", "") if paciente_sel else ""
             )
 
-        # Linha 6: Links / Redes Sociais
+        # Linha 6: Origem, Email e Redes Sociais
         col15_2, col15_3, col15_4 = st.columns([1, 1, 1])
         with col15_2:
             origem = st.text_input(
-                "Origem", value=paciente_sel["origem"] if paciente_sel else ""
+                "Origem", value=paciente_sel.get("origem", "") if paciente_sel else ""
             )
-
         with col15_3:
             email = st.text_input(
-                "E-mail", value=paciente_sel["email"] if paciente_sel else ""
+                "E-mail", value=paciente_sel.get("email", "") if paciente_sel else ""
             )
         with col15_4:
             instagram = st.text_input(
-                "Instagram", value=paciente_sel["instagram"] if paciente_sel else ""
+                "Instagram", value=paciente_sel.get("instagram", "") if paciente_sel else ""
             )
 
         st.markdown("<br>", unsafe_allow_html=True)
@@ -390,7 +396,7 @@ with col_direita:
 
     if not df_dados.empty:
         colunas_exibicao = [
-            c for c in ["codigo", "razao", "apelido"] if c in df_dados.columns
+            c for c in ["codigo", "nome", "apelido"] if c in df_dados.columns
         ]
 
         evento_selecao = st.dataframe(
@@ -425,13 +431,13 @@ with col_direita:
                 st.session_state.paciente_selecionada = dados_linha
                 st.rerun()
     else:
-        st.info("Nenhuma clínica cadastrada ou encontrada.")
+        st.info("Nenhum paciente cadastrado ou encontrado.")
 
 # ==========================================
 # 6. Lógica de Persistência (CRUD) e Ações
 # ==========================================
-data_fundacao_str = (
-    data_fundacao_val.strftime("%d/%m/%Y") if data_fundacao_val else None
+data_nascimento_str = (
+    data_nascimento_val.strftime("%d/%m/%Y") if data_nascimento_val else None
 )
 
 payload = {
@@ -448,7 +454,7 @@ payload = {
     "contato": contato,
     "cpf": cpf,
     "rg": rg,
-    "data_nascimento": data_fundacao_str,
+    "data_nascimento": data_nascimento_str,
     "email": email,
     "profissao": profissao,
     "origem": origem,
@@ -457,16 +463,16 @@ payload = {
 
 # --- INSERIR ---
 if submit_criar:
-    if razao:
+    if nome:
         try:
             supabase.table("pacientes").insert(payload).execute()
-            st.session_state["mensagem_sucesso"] = f"Clínica cadastrada com sucesso sob o Código {codigo}!"
+            st.session_state["mensagem_sucesso"] = f"Paciente cadastrado com sucesso sob o Código {codigo}!"
             limpar_campos_e_selecao()
             st.rerun()
         except Exception as e:
             st.error(f"Erro ao inserir dados no banco: {e}")
     else:
-        st.warning("Preencha obrigatoriamente o campo 'Razão Social'.")
+        st.warning("Preencha obrigatoriamente o campo 'Nome'.")
 
 # --- ATUALIZAR ---
 if submit_atualizar:
@@ -479,14 +485,14 @@ if submit_atualizar:
         except Exception as e:
             st.error(f"Erro ao atualizar registro: {e}")
     else:
-        st.warning("Selecione uma clínica na tabela antes de tentar atualizar.")
+        st.warning("Selecione um paciente na tabela antes de tentar atualizar.")
 
 # --- DELETAR ---
 if submit_deletar:
     if id_ativo:
         dialog_confirmar_deletar(id_ativo)
     else:
-        st.warning("Selecione uma clínica na tabela antes de tentar deletar.")
+        st.warning("Selecione um paciente na tabela antes de tentar deletar.")
 
 # --- LIMPAR ---
 if submit_limpar:
