@@ -175,6 +175,18 @@ def carregar_dados(pesquisa=""):
         return pd.DataFrame()
 
 
+def carregar_especialidades():
+    """Busca a lista de especialidades cadastradas na tabela 'especialidades'."""
+    try:
+        response = supabase.table("especialidades").select("nome").order("nome").execute()
+        if response.data:
+            return [item["nome"] for item in response.data if item.get("nome")]
+        return []
+    except Exception as e:
+        st.error(f"Erro ao carregar especialidades: {e}")
+        return []
+
+
 def obter_proximo_codigo():
     """Busca o maior código numérico cadastrado no Supabase e retorna o próximo valor."""
     try:
@@ -239,6 +251,9 @@ id_ativo = medico_sel.get("codigo") if medico_sel else None
 
 st.subheader("🏥 Cadastro de Médicos")
 
+# Carrega a lista de especialidades
+lista_especialidades = carregar_especialidades()
+
 # ==========================================
 # 5. Interface Gráfica em Duas Colunas
 # ==========================================
@@ -278,8 +293,6 @@ with col_esquerda:
                     data_inicial = None
 
             # Limites de seleção do calendário:
-            # Data mínima: 01/01/1900
-            # Data máxima: Data atual + 3 meses
             min_data = datetime.date(1900, 1, 1)
             max_data = datetime.date.today() + relativedelta(months=3)
 
@@ -348,11 +361,24 @@ with col_esquerda:
                 "E-mail", value=medico_sel.get("email", "") if medico_sel else ""
             )
 
-        # Linha 6: Redes Sociais
-        col14_2, _ = st.columns([1.3, 1])
+        # Linha 6: Redes Sociais e Especialidade
+        col14_2, col14_3 = st.columns([1.3, 1.3])
         with col14_2:
             instagram = st.text_input(
                 "Instagram", value=medico_sel.get("instagram", "") if medico_sel else ""
+            )
+        with col14_3:
+            # Lógica para pré-selecionar o valor gravado anteriormente na edição
+            esp_atual = medico_sel.get("especialidade") if medico_sel else None
+            index_esp = 0
+            if esp_atual and esp_atual in lista_especialidades:
+                index_esp = lista_especialidades.index(esp_atual)
+
+            especialidade = st.selectbox(
+                "Especialidade",
+                options=lista_especialidades,
+                index=index_esp if lista_especialidades else None,
+                placeholder="Selecione uma especialidade..."
             )
 
         st.markdown("<br>", unsafe_allow_html=True)
@@ -444,6 +470,7 @@ payload = {
     "email": email,
     "crm": crm,
     "instagram": instagram,
+    "especialidade": especialidade,
 }
 
 # --- INSERIR ---
