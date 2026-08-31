@@ -245,17 +245,17 @@ if "mensagem_sucesso" in st.session_state:
 clinica_sel = st.session_state.clinica_selecionada
 id_ativo = clinica_sel.get("codigo") if clinica_sel else None
 
-st.subheader("🏥 Cadastro de Clínicas")
+st.subheader("🏥 Gestão de Clínicas")
 
 # ==========================================
-# 5. Interface Gráfica em Duas Colunas
+# 5. Interface Gráfica com Abas (Tabs)
 # ==========================================
-col_esquerda, col_direita = st.columns([1.7, 1.3])
+tab_cadastro, tab_localizacao = st.tabs(["📝 Cadastro de Clínicas", "🔍 Localizar Clínicas"])
 
 # ------------------------------------------
-# COLUNA ESQUERDA: Formulário de Cadastro e Edição
+# ABA 1: Formulário de Cadastro e Edição
 # ------------------------------------------
-with col_esquerda:
+with tab_cadastro:
     if id_ativo:
         st.markdown(f"##### ✏️ Editando Clínica: Código {id_ativo}")
         codigo_exibicao = str(id_ativo)
@@ -383,9 +383,9 @@ with col_esquerda:
         )
 
 # ------------------------------------------
-# COLUNA DIREITA: Pesquisa e Seleção
+# ABA 2: Pesquisa, Seleção e Relatório
 # ------------------------------------------
-with col_direita:
+with tab_localizacao:
     st.markdown("##### 🔍 Localizar Clínica")
     filtro = st.text_input(
         "Filtrar por Razão Social ou Código:", placeholder="Digite para buscar..."
@@ -394,7 +394,7 @@ with col_direita:
 
     if not df_dados.empty:
         colunas_exibicao = [
-            c for c in ["codigo", "razao", "fantasia"] if c in df_dados.columns
+            c for c in ["codigo", "razao", "fantasia", "telefone"] if c in df_dados.columns
         ]
 
         evento_selecao = st.dataframe(
@@ -403,8 +403,18 @@ with col_direita:
             on_select="rerun",
             use_container_width=True,
             key=f"tabela_clinicas_{st.session_state.table_key}",
-            height=420,
+            height=500,
         )
+
+        # --- PROCESSA A SELEÇÃO DA TABELA ---
+        linhas_selecionadas = evento_selecao.selection.get("rows", [])
+        if linhas_selecionadas:
+            indice_selecionado = linhas_selecionadas[0]
+            dados_linha = df_dados.iloc[indice_selecionado].to_dict()
+
+            if st.session_state.clinica_selecionada != dados_linha:
+                st.session_state.clinica_selecionada = dados_linha
+                st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -420,14 +430,6 @@ with col_direita:
         except Exception as e:
             st.error(f"Erro ao preparar arquivo PDF: {e}")
 
-        linhas_selecionadas = evento_selecao.selection.get("rows", [])
-        if linhas_selecionadas:
-            indice_selecionado = linhas_selecionadas[0]
-            dados_linha = df_dados.iloc[indice_selecionado].to_dict()
-
-            if st.session_state.clinica_selecionada != dados_linha:
-                st.session_state.clinica_selecionada = dados_linha
-                st.rerun()
     else:
         st.info("Nenhuma clínica cadastrada ou encontrada.")
 

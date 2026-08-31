@@ -237,17 +237,17 @@ if "mensagem_sucesso" in st.session_state:
 paciente_sel = st.session_state.paciente_selecionada
 id_ativo = paciente_sel.get("codigo") if paciente_sel else None
 
-st.subheader("🏥 Cadastro de Pacientes")
+st.subheader("🏥 Gestão de Pacientes")
 
 # ==========================================
-# 5. Interface Gráfica em Duas Colunas
+# 5. Interface Gráfica com Abas (Tabs)
 # ==========================================
-col_esquerda, col_direita = st.columns([1.7, 1.3])
+tab_cadastro, tab_localizacao = st.tabs(["📝 Cadastro de Pacientes", "🔍 Localizar Pacientes"])
 
 # ------------------------------------------
-# COLUNA ESQUERDA: Formulário de Cadastro e Edição
+# ABA 1: Formulário de Cadastro e Edição
 # ------------------------------------------
-with col_esquerda:
+with tab_cadastro:
     if id_ativo:
         st.markdown(f"##### ✏️ Editando Paciente: Código {id_ativo}")
         codigo_exibicao = str(id_ativo)
@@ -292,9 +292,7 @@ with col_esquerda:
                 except Exception:
                     data_inicial = None
 
-            # Limites de seleção do calendário:
-            # Data mínima: 1900
-            # Data máxima: Data atual + 3 meses
+            # Limites de seleção do calendário
             min_data = datetime.date(1900, 1, 1)
             max_data = datetime.date.today() + relativedelta(months=3)
 
@@ -385,9 +383,9 @@ with col_esquerda:
         )
 
 # ------------------------------------------
-# COLUNA DIREITA: Pesquisa e Seleção
+# ABA 2: Pesquisa, Seleção e Relatório
 # ------------------------------------------
-with col_direita:
+with tab_localizacao:
     st.markdown("##### 🔍 Localizar Paciente")
     filtro = st.text_input(
         "Filtrar por Nome:", placeholder="Digite para buscar..."
@@ -396,7 +394,7 @@ with col_direita:
 
     if not df_dados.empty:
         colunas_exibicao = [
-            c for c in ["codigo", "nome", "apelido"] if c in df_dados.columns
+            c for c in ["codigo", "nome", "apelido", "telefone"] if c in df_dados.columns
         ]
 
         evento_selecao = st.dataframe(
@@ -405,8 +403,18 @@ with col_direita:
             on_select="rerun",
             use_container_width=True,
             key=f"tabela_pacientes_{st.session_state.table_key}",
-            height=420,
+            height=500,
         )
+
+        # --- PROCESSA A SELEÇÃO DA TABELA ---
+        linhas_selecionadas = evento_selecao.selection.get("rows", [])
+        if linhas_selecionadas:
+            indice_selecionado = linhas_selecionadas[0]
+            dados_linha = df_dados.iloc[indice_selecionado].to_dict()
+
+            if st.session_state.paciente_selecionada != dados_linha:
+                st.session_state.paciente_selecionada = dados_linha
+                st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -422,14 +430,6 @@ with col_direita:
         except Exception as e:
             st.error(f"Erro ao preparar arquivo PDF: {e}")
 
-        linhas_selecionadas = evento_selecao.selection.get("rows", [])
-        if linhas_selecionadas:
-            indice_selecionado = linhas_selecionadas[0]
-            dados_linha = df_dados.iloc[indice_selecionado].to_dict()
-
-            if st.session_state.paciente_selecionada != dados_linha:
-                st.session_state.paciente_selecionada = dados_linha
-                st.rerun()
     else:
         st.info("Nenhum paciente cadastrado ou encontrado.")
 

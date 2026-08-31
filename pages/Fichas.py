@@ -321,14 +321,14 @@ if ficha_sel:
 id_ativo = ficha_sel.get("ficha") if ficha_sel else None
 
 # ==========================================
-# 5. Interface Gráfica em Duas Colunas
+# 5. Interface Gráfica com Abas (Tabs)
 # ==========================================
-col_esquerda, col_direita = st.columns([1.7, 1.3])
+tab_cadastro, tab_localizacao = st.tabs(["📝 Cadastro da Ficha", "📍 Localização das Fichas"])
 
 # ------------------------------------------
-# COLUNA ESQUERDA: Formulário de Cadastro e Edição
+# ABA 1: Cadastro da Ficha
 # ------------------------------------------
-with col_esquerda:
+with tab_cadastro:
     if id_ativo:
         st.markdown(f"##### ✏️ Editando Ficha: N° {id_ativo}")
         ficha_exibicao = int(id_ativo)
@@ -525,9 +525,9 @@ with col_esquerda:
         )
 
 # ------------------------------------------
-# COLUNA DIREITA: Pesquisa e Seleção (Processada antes do rerun)
+# ABA 2: Localização das Fichas
 # ------------------------------------------
-with col_direita:
+with tab_localizacao:
     st.markdown("##### 🔍 Localizar Ficha")
     filtro = st.text_input(
         "Filtrar por Paciente:", placeholder="Digite para buscar..."
@@ -545,7 +545,7 @@ with col_direita:
             on_select="rerun",
             use_container_width=True,
             key=f"tabela_fichas_{st.session_state.table_key}",
-            height=580,
+            height=500,
         )
 
         # --- PROCESSA A SELEÇÃO DA TABELA ---

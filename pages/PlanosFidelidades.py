@@ -10,7 +10,7 @@ from supabase import Client, create_client
 # ==========================================
 # 1. Configuração da Página
 # ==========================================
-st.set_page_config(page_title="Cadastro de Especialidades Médicas", layout="wide")
+st.set_page_config(page_title="Cadastro de Planos de Fidelidade", layout="wide")
 
 # CSS para customizar a mensagem centralizada na tela
 st.markdown(
@@ -144,40 +144,50 @@ def gerar_relatorio_pdf(df, dados_clinica):
 
     # Título do Relatório
     pdf.set_font("helvetica", "B", 12)
-    pdf.cell(0, 6, limpar_texto("RELATÓRIO DE ESPECIALIDADES MÉDICAS"), align="C")
+    pdf.cell(0, 6, limpar_texto("RELATÓRIO DE PLANOS DE FIDELIDADE"), align="C")
     pdf.ln(8)
 
     # --- CABEÇALHO DA TABELA ---
-    largura_codigo = 30
-    largura_nome = 120
-    largura_valor = 40
+    largura_codigo = 20
+    largura_nome = 65
+    largura_mensalidade = 35
+    largura_clinica = 35
+    largura_fidelidade = 35
 
     pdf.set_fill_color(240, 240, 240)
-    pdf.set_font("helvetica", "B", 10)
+    pdf.set_font("helvetica", "B", 8)
     pdf.cell(largura_codigo, 8, limpar_texto(" Código"), border=1, fill=True)
-    pdf.cell(largura_nome, 8, limpar_texto(" Nome da Especialidade"), border=1, fill=True)
-    pdf.cell(largura_valor, 8, limpar_texto(" Valor da Consulta (R$)"), border=1, fill=True)
+    pdf.cell(largura_nome, 8, limpar_texto(" Nome do Plano"), border=1, fill=True)
+    pdf.cell(largura_mensalidade, 8, limpar_texto(" Mensalidade (R$)"), border=1, fill=True)
+    pdf.cell(largura_clinica, 8, limpar_texto(" Val. Clínica (R$)"), border=1, fill=True)
+    pdf.cell(largura_fidelidade, 8, limpar_texto(" Val. Fidelidade (R$)"), border=1, fill=True)
     pdf.ln(8)
 
     # --- DADOS DA TABELA ---
-    pdf.set_font("helvetica", "", 9)
+    pdf.set_font("helvetica", "", 8)
 
     for _, row in df.iterrows():
         cod = limpar_texto(row.get("codigo", "")) if pd.notna(row.get("codigo")) else ""
         nome = limpar_texto(row.get("nome", "")) if pd.notna(row.get("nome")) else ""
 
-        val_raw = row.get("valor", 0.0)
-        try:
-            valor_fmt = f"{float(val_raw):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
-        except (ValueError, TypeError):
-            valor_fmt = "0,00"
+        def formatar_moeda(valor_raw):
+            try:
+                return f"{float(valor_raw):,.2f}".replace(",", "X").replace(".", ",").replace("X", ".")
+            except (ValueError, TypeError):
+                return "0,00"
 
-        if len(nome) > 55:
-            nome = nome[:52] + "..."
+        clinica_fmt = formatar_moeda(row.get("valor_clinica", 0.0))
+        fidelidade_fmt = formatar_moeda(row.get("valor_fidelidade", 0.0))
+        mensalidade_fmt = formatar_moeda(row.get("valor_mensalidade", 0.0))
+
+        if len(nome) > 30:
+            nome = nome[:27] + "..."
 
         pdf.cell(largura_codigo, 7, f" {cod}", border=1)
         pdf.cell(largura_nome, 7, f" {nome}", border=1)
-        pdf.cell(largura_valor, 7, f" R$ {valor_fmt}", border=1)
+        pdf.cell(largura_mensalidade, 7, f" R$ {mensalidade_fmt}", border=1)
+        pdf.cell(largura_clinica, 7, f" R$ {clinica_fmt}", border=1)
+        pdf.cell(largura_fidelidade, 7, f" R$ {fidelidade_fmt}", border=1)
         pdf.ln(7)
 
     return bytes(pdf.output())
@@ -186,8 +196,8 @@ def gerar_relatorio_pdf(df, dados_clinica):
 # ==========================================
 # 4. Inicialização do Session State e Funções
 # ==========================================
-if "especialidade_selecionada" not in st.session_state:
-    st.session_state.especialidade_selecionada = None
+if "planofidelidade_selecionado" not in st.session_state:
+    st.session_state.planofidelidade_selecionado = None
 if "update_trigger" not in st.session_state:
     st.session_state.update_trigger = 0
 if "table_key" not in st.session_state:
@@ -196,7 +206,7 @@ if "table_key" not in st.session_state:
 
 def limpar_campos_e_selecao():
     """Reseta o registro selecionado e força novas chaves para o formulário e a tabela."""
-    st.session_state.especialidade_selecionada = None
+    st.session_state.planofidelidade_selecionado = None
     st.session_state.update_trigger += 1
     st.session_state.table_key += 1
 
@@ -205,13 +215,13 @@ def carregar_dados(pesquisa=""):
     try:
         if pesquisa:
             response = (
-                supabase.table("especialidades")
+                supabase.table("planosfidelidades")
                 .select("*")
                 .ilike("nome", f"%{pesquisa}%")
                 .execute()
             )
         else:
-            response = supabase.table("especialidades").select("*").execute()
+            response = supabase.table("planosfidelidades").select("*").execute()
         return pd.DataFrame(response.data)
     except Exception as e:
         st.error(f"Erro ao carregar dados: {e}")
@@ -222,7 +232,7 @@ def obter_proximo_codigo():
     """Busca o maior código numérico cadastrado no Supabase e retorna o próximo valor."""
     try:
         res = (
-            supabase.table("especialidades")
+            supabase.table("planosfidelidades")
             .select("codigo")
             .order("codigo", desc=True)
             .limit(1)
@@ -248,7 +258,7 @@ def dialog_confirmar_deletar(codigo_deletar):
     with col_sim:
         if st.button("Sim", use_container_width=True, type="primary"):
             try:
-                supabase.table("especialidades").delete().eq("codigo", codigo_deletar).execute()
+                supabase.table("planosfidelidades").delete().eq("codigo", codigo_deletar).execute()
                 limpar_campos_e_selecao()
                 st.session_state["mensagem_sucesso"] = "Registro removido com sucesso!"
                 st.rerun()
@@ -277,37 +287,63 @@ if "mensagem_sucesso" in st.session_state:
     time.sleep(3)
     container_msg.empty()
 
-especialidade_sel = st.session_state.especialidade_selecionada
-id_ativo = especialidade_sel.get("codigo") if especialidade_sel else None
+plano_sel = st.session_state.planofidelidade_selecionado
+id_ativo = plano_sel.get("codigo") if plano_sel else None
 
-st.subheader("🏥 Cadastro de Especialidades Médicas")
+st.subheader("💎 Cadastro de Planos de Fidelidade")
 
 # ==========================================
 # 5. Formulário de Cadastro e Edição
 # ==========================================
 if id_ativo:
-    st.markdown(f"##### ✏️ Editando Especialidade: Código {id_ativo}")
+    st.markdown(f"##### ✏️ Editando Plano de Fidelidade: Código {id_ativo}")
     codigo_exibicao = str(id_ativo)
 else:
-    st.markdown("##### ➕ Nova Especialidade")
+    st.markdown("##### ➕ Novo Plano de Fidelidade")
     codigo_exibicao = obter_proximo_codigo()
 
-with st.form(key=f"form_cliente_{st.session_state.update_trigger}"):
-    # Linha 1: Dados Principais e Valor
-    col1, col2, col3 = st.columns([1, 3, 1])
+with st.form(key=f"form_planofidelidade_{st.session_state.update_trigger}"):
+    # Ordem das Colunas: Código, Nome do Plano, Mensalidade Total (R$), Valor Clínica (R$) e Valor Fidelidade (R$)
+    col1, col2, col3, col4, col5 = st.columns([1, 2.5, 1.25, 1.25, 1.25])
+
     with col1:
         codigo = st.text_input(
             "Código", value=codigo_exibicao, disabled=True, help="Gerado automaticamente"
         )
     with col2:
         nome = st.text_input(
-            "Especialidade", value=especialidade_sel.get("nome", "") if especialidade_sel else ""
+            "Nome do Plano", value=plano_sel.get("nome", "") if plano_sel else ""
         )
+
+    # Valores numéricos para preenchimento padrão
+    clinica_padrao = float(plano_sel.get("valor_clinica", 0.0)) if plano_sel and plano_sel.get("valor_clinica") is not None else 0.0
+    fidelidade_padrao = float(plano_sel.get("valor_fidelidade", 0.0)) if plano_sel and plano_sel.get(
+        "valor_fidelidade") is not None else 0.0
+
+    # Define o valor padrão da mensalidade (registro existente ou a soma inicial)
+    if plano_sel and plano_sel.get("valor_mensalidade") is not None:
+        mensalidade_padrao = float(plano_sel.get("valor_mensalidade"))
+    else:
+        mensalidade_padrao = clinica_padrao + fidelidade_padrao
+
     with col3:
-        valor_padrao = float(especialidade_sel.get("valor", 0.0)) if especialidade_sel and especialidade_sel.get(
-            "valor") is not None else 0.0
-        valor = st.number_input(
-            "Valor da Consulta (R$)", value=valor_padrao, min_value=0.0, step=10.0, format="%.2f"
+        # Campo habilitado para edição direta do usuário
+        valor_mensalidade = st.number_input(
+            "Mensalidade (R$)",
+            value=mensalidade_padrao,
+            min_value=0.0,
+            step=10.0,
+            format="%.2f",
+            help="Digite o valor total da mensalidade"
+        )
+
+    with col4:
+        valor_clinica = st.number_input(
+            "Valor Clínica (R$)", value=clinica_padrao, min_value=0.0, step=10.0, format="%.2f"
+        )
+    with col5:
+        valor_fidelidade = st.number_input(
+            "Valor Fidelidade (R$)", value=fidelidade_padrao, min_value=0.0, step=10.0, format="%.2f"
         )
 
     st.markdown("<br>", unsafe_allow_html=True)
@@ -333,27 +369,29 @@ with st.form(key=f"form_cliente_{st.session_state.update_trigger}"):
 payload = {
     "codigo": codigo,
     "nome": nome,
-    "valor": valor,
+    "valor_clinica": valor_clinica,
+    "valor_fidelidade": valor_fidelidade,
+    "valor_mensalidade": valor_mensalidade,
 }
 
 # --- INSERIR ---
 if submit_criar:
     if nome:
         try:
-            supabase.table("especialidades").insert(payload).execute()
-            st.session_state["mensagem_sucesso"] = f"Especialidade cadastrada com sucesso sob o Código {codigo}!"
+            supabase.table("planosfidelidades").insert(payload).execute()
+            st.session_state["mensagem_sucesso"] = f"Plano de Fidelidade cadastrado com sucesso sob o Código {codigo}!"
             limpar_campos_e_selecao()
             st.rerun()
         except Exception as e:
             st.error(f"Erro ao inserir dados no banco: {e}")
     else:
-        st.warning("Preencha obrigatoriamente o campo 'Nome'.")
+        st.warning("Preencha obrigatoriamente o campo 'Nome do Plano'.")
 
 # --- ATUALIZAR ---
 if submit_atualizar:
     if id_ativo:
         try:
-            supabase.table("especialidades").update(payload).eq("codigo", id_ativo).execute()
+            supabase.table("planosfidelidades").update(payload).eq("codigo", id_ativo).execute()
             st.session_state["mensagem_sucesso"] = "Registro atualizado com sucesso!"
             limpar_campos_e_selecao()
             st.rerun()
@@ -378,33 +416,41 @@ if submit_limpar:
 # 7. Pesquisa, Tabela e Download em PDF (Fora do Form)
 # ==========================================
 st.markdown("---")
-st.markdown("##### 🔍 Localizar Especialidades Médicas")
+st.markdown("##### 🔍 Localizar Planos de Fidelidade")
 
 filtro = st.text_input(
-    "Filtrar por Especialidade:", placeholder="Digite para buscar..."
+    "Filtrar por Plano:", placeholder="Digite para buscar..."
 )
 df_dados = carregar_dados(filtro)
 
 if not df_dados.empty:
     colunas_exibicao = [
-        c for c in ["codigo", "nome", "valor"] if c in df_dados.columns
+        c for c in ["codigo", "nome", "valor_mensalidade", "valor_clinica", "valor_fidelidade"] if c in df_dados.columns
     ]
 
-    # Exibição configurada com a coluna de Valor formatada em R$
+    # Exibição configurada com colunas formatadas na mesma ordem do formulário
     evento_selecao = st.dataframe(
         df_dados[colunas_exibicao],
         column_config={
             "codigo": st.column_config.TextColumn("Código"),
-            "nome": st.column_config.TextColumn("Nome da Especialidade"),
-            "valor": st.column_config.NumberColumn(
-                "Valor da Consulta",
+            "nome": st.column_config.TextColumn("Nome do Plano"),
+            "valor_mensalidade": st.column_config.NumberColumn(
+                "Valor Mensalidade",
+                format="R$ %.2f"
+            ),
+            "valor_clinica": st.column_config.NumberColumn(
+                "Valor Clínica",
+                format="R$ %.2f"
+            ),
+            "valor_fidelidade": st.column_config.NumberColumn(
+                "Valor Fidelidade",
                 format="R$ %.2f"
             ),
         },
         selection_mode="single-row",
         on_select="rerun",
         use_container_width=True,
-        key=f"tabela_especialidades_{st.session_state.table_key}",
+        key=f"tabela_planosfidelidades_{st.session_state.table_key}",
         height=300,
     )
 
@@ -417,7 +463,7 @@ if not df_dados.empty:
         st.download_button(
             label="📄 Gerar Relatório PDF",
             data=pdf_data,
-            file_name="relatorio_especialidades.pdf",
+            file_name="relatorio_planos_fidelidade.pdf",
             mime="application/pdf",
             use_container_width=True,
         )
@@ -430,8 +476,8 @@ if not df_dados.empty:
         indice_selecionado = linhas_selecionadas[0]
         dados_linha = df_dados.iloc[indice_selecionado].to_dict()
 
-        if st.session_state.especialidade_selecionada != dados_linha:
-            st.session_state.especialidade_selecionada = dados_linha
+        if st.session_state.planofidelidade_selecionado != dados_linha:
+            st.session_state.planofidelidade_selecionado = dados_linha
             st.rerun()
 else:
-    st.info("Nenhuma especialidade médica cadastrada ou encontrada.")
+    st.info("Nenhum plano de fidelidade cadastrado ou encontrado.")

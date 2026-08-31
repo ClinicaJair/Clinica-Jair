@@ -249,20 +249,20 @@ if "mensagem_sucesso" in st.session_state:
 medico_sel = st.session_state.medico_selecionada
 id_ativo = medico_sel.get("codigo") if medico_sel else None
 
-st.subheader("🏥 Cadastro de Médicos")
+st.subheader("🏥 Gestão de Médicos")
 
 # Carrega a lista de especialidades
 lista_especialidades = carregar_especialidades()
 
 # ==========================================
-# 5. Interface Gráfica em Duas Colunas
+# 5. Interface Gráfica com Abas (Tabs)
 # ==========================================
-col_esquerda, col_direita = st.columns([1.7, 1.3])
+tab_cadastro, tab_localizacao = st.tabs(["📝 Cadastro do Médico", "🔍 Localizar Médicos"])
 
 # ------------------------------------------
-# COLUNA ESQUERDA: Formulário de Cadastro e Edição
+# ABA 1: Cadastro do Médico
 # ------------------------------------------
-with col_esquerda:
+with tab_cadastro:
     if id_ativo:
         st.markdown(f"##### ✏️ Editando Médico: Código {id_ativo}")
         codigo_exibicao = str(id_ativo)
@@ -399,9 +399,9 @@ with col_esquerda:
         )
 
 # ------------------------------------------
-# COLUNA DIREITA: Pesquisa e Seleção
+# ABA 2: Localizar Médicos
 # ------------------------------------------
-with col_direita:
+with tab_localizacao:
     st.markdown("##### 🔍 Localizar Médico")
     filtro = st.text_input(
         "Filtrar por Nome:", placeholder="Digite para buscar..."
@@ -419,8 +419,18 @@ with col_direita:
             on_select="rerun",
             use_container_width=True,
             key=f"tabela_medicos_{st.session_state.table_key}",
-            height=420,
+            height=500,
         )
+
+        # --- PROCESSA A SELEÇÃO DA TABELA ---
+        linhas_selecionadas = evento_selecao.selection.get("rows", [])
+        if linhas_selecionadas:
+            indice_selecionado = linhas_selecionadas[0]
+            dados_linha = df_dados.iloc[indice_selecionado].to_dict()
+
+            if st.session_state.medico_selecionada != dados_linha:
+                st.session_state.medico_selecionada = dados_linha
+                st.rerun()
 
         st.markdown("<br>", unsafe_allow_html=True)
 
@@ -436,14 +446,6 @@ with col_direita:
         except Exception as e:
             st.error(f"Erro ao preparar arquivo PDF: {e}")
 
-        linhas_selecionadas = evento_selecao.selection.get("rows", [])
-        if linhas_selecionadas:
-            indice_selecionado = linhas_selecionadas[0]
-            dados_linha = df_dados.iloc[indice_selecionado].to_dict()
-
-            if st.session_state.medico_selecionada != dados_linha:
-                st.session_state.medico_selecionada = dados_linha
-                st.rerun()
     else:
         st.info("Nenhum médico cadastrado ou encontrado.")
 
