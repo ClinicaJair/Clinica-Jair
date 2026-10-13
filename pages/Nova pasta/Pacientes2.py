@@ -1,0 +1,588 @@
+import io
+import time
+import datetime
+from dateutil.relativedelta import relativedelta
+import pandas as pd
+import streamlit as st
+from fpdf import FPDF
+from supabase import Client, create_client
+
+# ==========================================
+# 1. Configuração da Página
+# ==========================================
+st.set_page_config(page_title="Cadastro de Pacientes", layout="wide")
+
+st.markdown(
+    """
+    <style>
+    .block-container { padding-top: 1rem !important; padding-bottom: 0rem !important; }
+    header { visibility: hidden; height: 0px; }
+
+    .mensagem-centralizada {
+        position: fixed;
+        top: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 99999;
+        background-color: #d4edda;
+        color: #155724;
+        border: 1px solid #c3e6cb;
+        padding: 12px 24px;
+        border-radius: 8px;
+        font-weight: bold;
+        box-shadow: 0px 4px 12px rgba(0,0,0,0.15);
+        text-align: center;
+        animation: fadeIn 0.3s ease-in-out;
+    }
+
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translate(-50%, -10px); }
+        to { opacity: 1; transform: translate(-50%, 0); }
+    }
+
+    /* Estilização para botões CRUD fora do formulário */
+    div.stButton > button {
+        background-color: #81D4FA !important;
+        color: #000000 !important;
+        border: 1px solid #81D4FA !important;
+        font-weight: bold;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    div.stButton > button:hover {
+        background-color: #4FC3F7 !important;
+        border-color: #4FC3F7 !important;
+        color: #000000 !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
+
+# ==========================================
+# 2. Conexão com o Supabase
+# ==========================================
+@st.cache_resource
+def iniciar_conexao():
+    try:
+        SUPABASE_URL = st.secrets["SUPABASE_URL"]
+        SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
+        return create_client(SUPABASE_URL, SUPABASE_KEY)
+    except Exception as e:
+        st.error(f"Erro ao carregar credenciais do Supabase: {e}")
+        st.stop()
+
+
+supabase = iniciar_conexao()
+
+
+# ==========================================
+# 3. Função para Gerar Relatório PDF
+# ==========================================
+def gerar_relatorio_pdf(df):
+    pdf = FPDF(orientation="P", unit="mm", format="A4")
+    pdf.add_page()
+    pdf.set_font("helvetica", size=10)
+
+    def limpar_texto(txt):
+        if not txt:
+            return ""
+        return str(txt).encode("latin-1", "ignore").decode("latin-1")
+
+    pdf.set_font("helvetica", "B", 16)
+    pdf.cell(0, 8, limpar_texto("SISTEMA DE GESTÃO DE PACIENTES"), ln=True, align="C")
+    pdf.set_font("helvetica", "", 10)
+    pdf.cell(
+        0,
+        6,
+        limpar_texto("Relatório Geral de Pacientes Cadastrados"),
+        ln=True,
+        align="C",
+    )
+
+    pdf.set_draw_color(180, 180, 180)
+    pdf.line(10, 26, 200, 26)
+    pdf.ln(8)
+
+    largura_nome = 90
+    largura_cpf = 50
+    largura_telefone = 50
+
+    pdf.set_fill_color(240, 240, 240)
+    pdf.set_font("helvetica", "B", 10)
+    pdf.cell(largura_nome, 8, limpar_texto(" Nome"), border=1, fill=True)
+    pdf.cell(largura_cpf, 8, limpar_texto(" CPF"), border=1, fill=True)
+    pdf.cell(
+        largura_telefone,
+        8,
+        limpar_texto(" Telefone"),
+        border=1,
+        ln=True,
+        fill=True,
+    )
+
+    pdf.set_font("helvetica", "", 9)
+
+    for _, row in df.iterrows():
+        nome_val = (
+            limpar_texto(row.get("nome", row.get("razao", "")))
+            if pd.notna(row.get("nome", row.get("razao")))
+            else ""
+        )
+        cpf = (
+            limpar_texto(row.get("cpf", row.get("CPF", "")))
+            if pd.notna(row.get("cpf", row.get("CPF")))
+            else ""
+        )
+        telefone = (
+            limpar_texto(row.get("telefone", ""))
+            if pd.notna(row.get("telefone"))
+            else ""
+        )
+
+        if len(nome_val) > 45:
+            nome_val = nome_val[:42] + "..."
+
+        pdf.cell(largura_nome, 7, f" {nome_val}", border=1)
+        pdf.cell(largura_cpf, 7, f" {cpf}", border=1)
+        pdf.cell(largura_telefone, 7, f" {telefone}", border=1, ln=True)
+
+    return bytes(pdf.output())
+
+
+# ==========================================
+# 4. Inicialização do Session State e Auxiliares
+# ==========================================
+if "paciente_selecionada" not in st.session_state:
+    st.session_state.paciente_selecionada = None
+if "update_trigger" not in st.session_state:
+    st.session_state.update_trigger = 0
+if "table_key" not in st.session_state:
+    st.session_state.table_key = 0
+
+
+def limpar_campos_e_selecao():
+    st.session_state.paciente_selecionada = None
+    st.session_state.update_trigger += 1
+    st.session_state.table_key += 1
+
+
+def carregar_dados(pesquisa=""):
+    try:
+        if pesquisa:
+            response = (
+                supabase.table("pacientes")
+                .select("*")
+                .ilike("nome", f"%{pesquisa}%")
+                .execute()
+            )
+        else:
+            response = supabase.table("pacientes").select("*").execute()
+        return pd.DataFrame(response.data)
+    except Exception as e:
+        st.error(f"Erro ao carregar dados: {e}")
+        return pd.DataFrame()
+
+
+def carregar_planos_fidelidade():
+    """Busca os planos de fidelidade cadastrados no banco."""
+    try:
+        res = supabase.table("planosfidelidades").select("codigo, nome").execute()
+        return res.data if res.data else []
+    except Exception as e:
+        return []
+
+
+def carregar_pagamentos_fidelidade(cod_paciente):
+    """Busca o histórico de pagamentos de fidelidade do paciente."""
+    if not cod_paciente:
+        return pd.DataFrame()
+    try:
+        res = (
+            supabase.table("pagtofidelidade")
+            .select("codpaciente, paciente, plano, vlrplano, vlrclinica, vlrfidelidade, tipopagto")
+            .eq("codpaciente", str(cod_paciente))
+            .execute()
+        )
+        return pd.DataFrame(res.data)
+    except Exception as e:
+        st.error(f"Erro ao carregar histórico de pagamentos: {e}")
+        return pd.DataFrame()
+
+
+def obter_proximo_codigo():
+    try:
+        res = (
+            supabase.table("pacientes")
+            .select("codigo")
+            .order("codigo", desc=True)
+            .limit(1)
+            .execute()
+        )
+        if res.data and len(res.data) > 0:
+            ultimo_codigo = res.data[0]["codigo"]
+            try:
+                return str(int(ultimo_codigo) + 1)
+            except ValueError:
+                return "1"
+        return "1"
+    except Exception:
+        return "1"
+
+
+@st.dialog("⚠️ Confirmar Exclusão")
+def dialog_confirmar_deletar(codigo_deletar):
+    st.write(f"Deseja realmente deletar o registro **Código {codigo_deletar}**?")
+    col_sim, col_nao = st.columns(2)
+
+    with col_sim:
+        if st.button("Sim", use_container_width=True, type="primary"):
+            try:
+                supabase.table("pacientes").delete().eq("codigo", codigo_deletar).execute()
+                limpar_campos_e_selecao()
+                st.session_state["mensagem_sucesso"] = "Registro removido com sucesso!"
+                st.rerun()
+            except Exception as e:
+                st.error(f"Erro ao deletar registro: {e}")
+
+    with col_nao:
+        if st.button("Não", use_container_width=True):
+            st.rerun()
+
+
+if "mensagem_sucesso" in st.session_state:
+    mensagem = st.session_state.pop("mensagem_sucesso")
+    container_msg = st.empty()
+    container_msg.markdown(
+        f'<div class="mensagem-centralizada">✅ {mensagem}</div>',
+        unsafe_allow_html=True
+    )
+    time.sleep(3)
+    container_msg.empty()
+
+paciente_sel = st.session_state.paciente_selecionada
+id_ativo = paciente_sel.get("codigo") if paciente_sel else None
+
+st.subheader("Cadastro de Pacientes")
+
+# ==========================================
+# 5. Exibição do Nome do Paciente Acima das Abas
+# ==========================================
+if id_ativo:
+    nome_atual_paciente = paciente_sel.get("nome", "Sem Nome")
+    st.markdown(f"### 👤 Paciente Selecionado: **{nome_atual_paciente}** (Código: {id_ativo})")
+    codigo_exibicao = str(id_ativo)
+else:
+    st.markdown("### 👤 Novo Paciente (Modo de Cadastro)")
+    codigo_exibicao = obter_proximo_codigo()
+
+st.markdown("---")
+
+# ==========================================
+# 6. Interface Gráfica com Abas (Tabs)
+# ==========================================
+tab_cadastro, tab_fidelidade, tab_localizacao = st.tabs(
+    ["📝 Cadastro de Pacientes", "🎁 Histórico Fidelidade", "🔍 Localizar Pacientes"]
+)
+
+# Prepara os dados de planos de fidelidade
+planos_lista = carregar_planos_fidelidade()
+opcoes_planos = {"": "Selecione um Plano..."}
+for p in planos_lista:
+    opcoes_planos[str(p["codigo"])] = p["nome"]
+
+# ------------------------------------------
+# ABA 1: Formulário de Cadastro e Edição
+# ------------------------------------------
+with tab_cadastro:
+    if id_ativo:
+        st.markdown(f"##### ✏️ Editando Dados do Paciente: Código {id_ativo}")
+    else:
+        st.markdown("##### ➕ Inclusão de Novo Paciente")
+
+    with st.container():
+        # Linha 1: Código, Nome, Apelido, Dt.Nascimento
+        col1, col2, col3, col6 = st.columns([0.8, 2.5, 1.85, 0.65])
+        with col1:
+            codigo = st.text_input(
+                "Código", value=codigo_exibicao, disabled=True, help="Gerado automaticamente", key=f"inp_cod_{st.session_state.update_trigger}"
+            )
+        with col2:
+            nome = st.text_input(
+                "Nome", value=paciente_sel.get("nome", "") if paciente_sel else "", key=f"inp_nome_{st.session_state.update_trigger}"
+            )
+        with col3:
+            apelido = st.text_input(
+                "Apelido", value=paciente_sel.get("apelido", "") if paciente_sel else "", key=f"inp_apelido_{st.session_state.update_trigger}"
+            )
+        with col6:
+            data_inicial = None
+            if paciente_sel and paciente_sel.get("data_nascimento"):
+                try:
+                    data_inicial = pd.to_datetime(
+                        paciente_sel["data_nascimento"], dayfirst=True
+                    ).date()
+                except Exception:
+                    data_inicial = None
+
+            min_data = datetime.date(1900, 1, 1)
+            max_data = datetime.date.today() + relativedelta(months=3)
+
+            data_nascimento_val = st.date_input(
+                "Dt.Nascimento",
+                value=data_inicial,
+                min_value=min_data,
+                max_value=max_data,
+                format="DD/MM/YYYY",
+                key=f"inp_dtnasc_{st.session_state.update_trigger}"
+            )
+
+        # Linha 2: CPF, RG, Profissão, Origem
+        col4, col5, col12, col15_2 = st.columns([1, 1, 1.5, 1.5])
+        with col4:
+            cpf = st.text_input(
+                "CPF", value=paciente_sel.get("cpf", "") if paciente_sel else "", key=f"inp_cpf_{st.session_state.update_trigger}"
+            )
+        with col5:
+            rg = st.text_input(
+                "RG", value=paciente_sel.get("rg", "") if paciente_sel else "", key=f"inp_rg_{st.session_state.update_trigger}"
+            )
+        with col12:
+            profissao = st.text_input(
+                "Profissão", value=paciente_sel.get("profissao", "") if paciente_sel else "", key=f"inp_prof_{st.session_state.update_trigger}"
+            )
+        with col15_2:
+            origem = st.text_input(
+                "Origem", value=paciente_sel.get("origem", "") if paciente_sel else "", key=f"inp_origem_{st.session_state.update_trigger}"
+            )
+
+        # Linha 3: CEP, Endereço, Estado
+        col7, col8, col9 = st.columns([1, 4.5, 0.8])
+        with col7:
+            cep = st.text_input(
+                "CEP", value=paciente_sel.get("cep", "") if paciente_sel else "", key=f"inp_cep_{st.session_state.update_trigger}"
+            )
+        with col8:
+            endereco = st.text_input(
+                "Endereço", value=paciente_sel.get("endereco", "") if paciente_sel else "", key=f"inp_end_{st.session_state.update_trigger}"
+            )
+        with col9:
+            estado = st.text_input(
+                "Estado", value=paciente_sel.get("estado", "") if paciente_sel else "", key=f"inp_estado_{st.session_state.update_trigger}"
+            )
+
+        # Linha 4: Bairro, Cidade, Telefone, Telefone 2
+        col10, col11, col13, col14 = st.columns([1, 1, 1.2, 1.2])
+        with col10:
+            bairro = st.text_input(
+                "Bairro", value=paciente_sel.get("bairro", "") if paciente_sel else "", key=f"inp_bairro_{st.session_state.update_trigger}"
+            )
+        with col11:
+            cidade = st.text_input(
+                "Cidade", value=paciente_sel.get("cidade", "") if paciente_sel else "", key=f"inp_cidade_{st.session_state.update_trigger}"
+            )
+        with col13:
+            telefone = st.text_input(
+                "Telefone", value=paciente_sel.get("telefone", "") if paciente_sel else "", key=f"inp_tel_{st.session_state.update_trigger}"
+            )
+        with col14:
+            telefone1 = st.text_input(
+                "Telefone 2",
+                value=paciente_sel.get("telefone1", "") if paciente_sel else "",
+                key=f"inp_tel2_{st.session_state.update_trigger}"
+            )
+
+        # Linha 5: Contato, Email, Instagram
+        col15, col15_3, col15_4 = st.columns([1.5, 2, 1.5])
+        with col15:
+            contato = st.text_input(
+                "Contato", value=paciente_sel.get("contato", "") if paciente_sel else "", key=f"inp_contato_{st.session_state.update_trigger}"
+            )
+        with col15_3:
+            email = st.text_input(
+                "E-mail", value=paciente_sel.get("email", "") if paciente_sel else "", key=f"inp_email_{st.session_state.update_trigger}"
+            )
+        with col15_4:
+            instagram = st.text_input(
+                "Instagram", value=paciente_sel.get("instagram", "") if paciente_sel else "", key=f"inp_insta_{st.session_state.update_trigger}"
+            )
+
+# ------------------------------------------
+# ABA 2: Histórico Fidelidade
+# ------------------------------------------
+with tab_fidelidade:
+    st.markdown("##### 🎁 Informações e Histórico do Plano de Fidelidade")
+
+    codplano_atual = str(paciente_sel.get("codplano", "")) if paciente_sel and paciente_sel.get("codplano") else ""
+    saldo_atual = float(paciente_sel.get("saldo", 0.0)) if paciente_sel and paciente_sel.get("saldo") else 0.0
+
+    col_f1, col_f2, col_f3 = st.columns([1.5, 2.5, 1])
+    with col_f1:
+        codplano_sel = st.selectbox(
+            "Cód. Plano",
+            options=list(opcoes_planos.keys()),
+            format_func=lambda x: f"{x} - {opcoes_planos[x]}" if x else "Selecione...",
+            index=list(opcoes_planos.keys()).index(codplano_atual) if codplano_atual in opcoes_planos else 0,
+            key=f"codplano_select_{st.session_state.update_trigger}"
+        )
+    with col_f2:
+        planofidelidade_nome = opcoes_planos.get(codplano_sel, "") if codplano_sel else ""
+        st.text_input("Plano Fidelidade", value=planofidelidade_nome, disabled=True, key=f"inp_planonome_{st.session_state.update_trigger}")
+    with col_f3:
+        saldo_val = st.number_input("Saldo", value=saldo_atual, format="%.2f", step=1.0, key=f"inp_saldo_{st.session_state.update_trigger}")
+
+    st.markdown("---")
+    st.markdown("##### 💳 Frame de Pagamentos de Fidelidade")
+
+    # Carrega e exibe os pagamentos filtrados
+    df_pagtos = carregar_pagamentos_fidelidade(codigo_exibicao)
+
+    soma_vlrfidelidade = 0.0
+    if not df_pagtos.empty:
+        colunas_pagto = [
+            "codpaciente", "paciente", "plano", "vlrplano",
+            "vlrclinica", "vlrfidelidade", "tipopagto"
+        ]
+        colunas_existentes = [c for c in colunas_pagto if c in df_pagtos.columns]
+
+        st.dataframe(
+            df_pagtos[colunas_existentes],
+            use_container_width=True,
+            height=220
+        )
+
+        if "vlrfidelidade" in df_pagtos.columns:
+            soma_vlrfidelidade = pd.to_numeric(df_pagtos["vlrfidelidade"], errors="coerce").sum()
+            st.info(f"💰 **Total Valor Fidelidade (Soma):** R$ {soma_vlrfidelidade:,.2f}")
+    else:
+        st.info("Nenhum registro de pagamento de fidelidade encontrado para este paciente.")
+
+# ------------------------------------------
+# ABA 3: Pesquisa, Seleção e Relatório
+# ------------------------------------------
+with tab_localizacao:
+    st.markdown("##### 🔍 Localizar Paciente")
+    filtro = st.text_input("Filtrar por Nome:", placeholder="Digite para buscar...", key="filtro_nome_pesquisa")
+    df_dados = carregar_dados(filtro)
+
+    if not df_dados.empty:
+        colunas_exibicao = [
+            c for c in ["codigo", "nome", "apelido", "telefone", "planofidelidade"] if c in df_dados.columns
+        ]
+
+        evento_selecao = st.dataframe(
+            df_dados[colunas_exibicao],
+            selection_mode="single-row",
+            on_select="rerun",
+            use_container_width=True,
+            key=f"tabela_pacientes_{st.session_state.table_key}",
+            height=350,
+        )
+
+        linhas_selecionadas = evento_selecao.selection.get("rows", [])
+        if linhas_selecionadas:
+            indice_selecionado = linhas_selecionadas[0]
+            dados_linha = df_dados.iloc[indice_selecionado].to_dict()
+
+            if st.session_state.paciente_selecionada != dados_linha:
+                st.session_state.paciente_selecionada = dados_linha
+                st.rerun()
+
+        st.markdown("<br>", unsafe_allow_html=True)
+
+        try:
+            pdf_data = gerar_relatorio_pdf(df_dados)
+            st.download_button(
+                label="📄 Gerar Relatório PDF",
+                data=pdf_data,
+                file_name="relatorio_pacientes.pdf",
+                mime="application/pdf",
+                use_container_width=True,
+            )
+        except Exception as e:
+            st.error(f"Erro ao preparar arquivo PDF: {e}")
+    else:
+        st.info("Nenhum paciente cadastrado ou encontrado.")
+
+# ==========================================
+# 7. Botões CRUD Posicionados Fora das Abas
+# ==========================================
+st.markdown("---")
+col_b1, col_b2, col_b3, col_b4 = st.columns(4)
+submit_criar = col_b1.button("➕ Inserir", use_container_width=True)
+submit_atualizar = col_b2.button("✏️ Atualizar", use_container_width=True)
+submit_deletar = col_b3.button("🗑️ Deletar", use_container_width=True)
+submit_limpar = col_b4.button("🧹 Limpar", use_container_width=True)
+
+
+# ==========================================
+# 8. Lógica de Persistência (CRUD) e Ações
+# ==========================================
+data_nascimento_str = (
+    data_nascimento_val.strftime("%d/%m/%Y") if data_nascimento_val else None
+)
+
+payload = {
+    "codigo": codigo,
+    "nome": nome,
+    "apelido": apelido,
+    "endereco": endereco,
+    "cep": cep,
+    "bairro": bairro,
+    "cidade": cidade,
+    "estado": estado,
+    "telefone": telefone,
+    "telefone1": telefone1,
+    "contato": contato,
+    "cpf": cpf,
+    "rg": rg,
+    "data_nascimento": data_nascimento_str,
+    "email": email,
+    "profissao": profissao,
+    "origem": origem,
+    "instagram": instagram,
+    # Campos de Fidelidade incluídos para persistência completa
+    "codplano": codplano_sel,
+    "planofidelidade": planofidelidade_nome,
+    "saldo": float(saldo_val),
+    "vlrplano": float(soma_vlrfidelidade),
+}
+
+# --- INSERIR ---
+if submit_criar:
+    if nome:
+        try:
+            supabase.table("pacientes").insert(payload).execute()
+            st.session_state["mensagem_sucesso"] = f"Paciente cadastrado com sucesso sob o Código {codigo}!"
+            limpar_campos_e_selecao()
+            st.rerun()
+        except Exception as e:
+            st.error(f"Erro ao inserir dados no banco: {e}")
+    else:
+        st.warning("Preencha obrigatoriamente o campo 'Nome'.")
+
+# --- ATUALIZAR ---
+if submit_atualizar:
+    if id_ativo:
+        try:
+            supabase.table("pacientes").update(payload).eq("codigo", id_ativo).execute()
+            st.session_state["mensagem_sucesso"] = "Registro atualizado com sucesso!"
+            limpar_campos_e_selecao()
+            st.rerun()
+        except Exception as e:
+            st.error(f"Erro ao atualizar registro: {e}")
+    else:
+        st.warning("Selecione um paciente na tabela antes de tentar atualizar.")
+
+# --- DELETAR ---
+if submit_deletar:
+    if id_ativo:
+        dialog_confirmar_deletar(id_ativo)
+    else:
+        st.warning("Selecione um paciente na tabela antes de tentar deletar.")
+
+# --- LIMPAR ---
+if submit_limpar:
+    limpar_campos_e_selecao()
+    st.rerun()

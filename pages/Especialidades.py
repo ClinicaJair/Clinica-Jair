@@ -12,12 +12,46 @@ from supabase import Client, create_client
 # ==========================================
 st.set_page_config(page_title="Cadastro de Especialidades Médicas", layout="wide")
 
-# CSS para customizar a mensagem centralizada na tela
+# CSS Ajustado com seletores específicos para formulários (stFormSubmitButton)
 st.markdown(
     """
     <style>
     .block-container { padding-top: 1rem !important; padding-bottom: 0rem !important; }
     header { visibility: hidden; height: 0px; }
+
+    /* Estilização dos Botões CRUD (Formulário) e Download */
+    div[data-testid="stFormSubmitButton"] > button,
+    div.stButton > button, 
+    div.stDownloadButton > button {
+        background-color: #81D4FA !important;
+        color: #00334E !important;
+        border: 1px solid #4FC3F7 !important;
+        border-radius: 6px !important;
+        font-weight: bold !important;
+        transition: background-color 0.3s ease, border-color 0.3s ease !important;
+    }
+
+    /* Estado Hover (Passar o Mouse) */
+    div[data-testid="stFormSubmitButton"] > button:hover,
+    div.stButton > button:hover, 
+    div.stDownloadButton > button:hover {
+        background-color: #4FC3F7 !important;
+        border-color: #29B6F6 !important;
+        color: #002235 !important;
+    }
+
+    /* Estado Active / Focus para manter a coerência visual ao clicar */
+    div[data-testid="stFormSubmitButton"] > button:focus,
+    div[data-testid="stFormSubmitButton"] > button:active,
+    div.stButton > button:focus,
+    div.stButton > button:active,
+    div.stDownloadButton > button:focus,
+    div.stDownloadButton > button:active {
+        background-color: #29B6F6 !important;
+        color: #002235 !important;
+        border-color: #0288D1 !important;
+        box-shadow: none !important;
+    }
 
     /* Estilização do Toast / Popup Centralizado */
     .mensagem-centralizada {
@@ -280,7 +314,7 @@ if "mensagem_sucesso" in st.session_state:
 especialidade_sel = st.session_state.especialidade_selecionada
 id_ativo = especialidade_sel.get("codigo") if especialidade_sel else None
 
-st.subheader("🏥 Cadastro de Especialidades Médicas")
+st.subheader("Cadastro de Especialidades Médicas")
 
 # ==========================================
 # 5. Formulário de Cadastro e Edição
@@ -377,7 +411,7 @@ if submit_limpar:
 # ==========================================
 # 7. Pesquisa, Tabela e Download em PDF (Fora do Form)
 # ==========================================
-st.markdown("---")
+# st.markdown("---")
 st.markdown("##### 🔍 Localizar Especialidades Médicas")
 
 filtro = st.text_input(

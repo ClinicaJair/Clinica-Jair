@@ -1,68 +1,93 @@
-import streamlit as st
-#from st_supabase_connection import SupabaseConnection
-import pandas as pd
-from supabase import create_client, Client
 from datetime import datetime
-from streamlit_autorefresh import st_autorefresh
+import io
+import pandas as pd
+import streamlit as st
+from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Table, TableStyle
-from reportlab.lib import colors
-import io
+from supabase import Client, create_client
 
-# 1. Conexão com o Banco de Dados (Substitua pelas suas credenciais do Supabase)
-#supabase = st.connection("supabase", type=SupabaseConnection)
+# 1. Configuração da página
+st.set_page_config(page_title="Sistema Comercial", page_icon="📊", layout="wide")
+
+# 2. Conexão com o Banco de Dados
 SUPABASE_URL = st.secrets["SUPABASE_URL"]
 SUPABASE_KEY = st.secrets["SUPABASE_KEY"]
 
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 
-st.set_page_config(page_title="Sistema Comercial", page_icon="📊", layout="wide")
+# =========================================================
+# CABEÇALHO (Sem loop automático)
+# =========================================================
+col_topo1, col_topo2 = st.columns([3, 1])
 
-st.title("🚀 Sistema de controle - Clinica Dr. Jair")
+with col_topo1:
+    st.title("🏥 Clínica Dr. Jair")
+    st.caption("Painel Administrativo - Visão Completa")
+
+with col_topo2:
+    # Exibição da data e hora atual (estática ao carregar)
+    agora = datetime.now()
+    data_formatada = agora.strftime("%d/%m/%Y")
+    hora_formatada = agora.strftime("%H:%M:%S")
+
+    st.markdown(
+        f"""
+        <div style="text-align: right; padding: 5px; background-color: #f0f2f6; border-radius: 8px;">
+            <span style="font-size: 13px; font-weight: bold;">🕒 {data_formatada} - {hora_formatada}</span>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
 st.markdown("---")
 
-st.header("Bem-vindo ao Dashboard de Gestão - Clinica Dr. Jair")
+# =========================================================
+# CONTEÚDO PRINCIPAL (Página Única / Seções Sequenciais)
+# =========================================================
 
+# 1. Dashboard
+st.header("🚀 Dashboard de Gestão")
+
+# Consulta no Supabase
 resultado_paciente = supabase.table("pacientes").select("*").execute()
-qtd_paciente = resultado_paciente.count
-
-#resultado_medico = supabase.table("medicos").select("*").execute()
-#qtd_medico = resultado_medico.count
+qtd_paciente = (
+    resultado_paciente.count
+    if resultado_paciente.count is not None
+    else 0
+)
 
 col1, col2, col3 = st.columns(3)
-
 col1.metric("Pacientes Cadastrados", qtd_paciente, "+5")
-col2.metric("Medicos Cadastrados", "01", "12")
+col2.metric("Médicos Cadastrados", "01", "12")
 col3.metric("Especialidades", "R$ 15.000", "+12%")
 
-# 1. Configura o relógio (autorefresh): força a página a recarregar a cada 1000 milissegundos (1 segundo)
-st_autorefresh(interval=1000, key="relogio_atualizado")
+st.markdown("---")
 
-# 2. Obtém a data e hora atual do sistema
-agora = datetime.now()
-data_formatada = agora.strftime("%d/%m/%Y")
-hora_formatada = agora.strftime("%H:%M:%S")
+# 2. Gestão de Pacientes
+st.subheader("👥 Gestão de Pacientes")
+st.write("Conteúdo da tela de cadastro e edição de pacientes.")
 
-# 3. Exibe o relógio na Barra Lateral (Sidebar)
-#with st.sidebar:
-st.markdown("### 🕒 Horário do Sistema")
-#st.metric(label="Data", value=data_formatada)
-#$st.metric(label="Hora Atual", value=hora_formatada)
+st.markdown("---")
 
-col1, col2, = st.columns([5, 5])
+# 3. Gestão de Médicos
+st.subheader("🩺 Gestão de Médicos")
+st.write("Conteúdo da tela de cadastro e edição de médicos.")
 
-# 2. Usar 'with' para adicionar widgets nas colunas
-with col1:
-    st.metric(label="Data", value=data_formatada)
+st.markdown("---")
 
-with col2:
-    st.metric(label="Hora Atual", value=hora_formatada)
+# 4. Fichas Médicas
+st.subheader("📋 Fichas Médicas")
+st.write("Conteúdo da gestão de fichas médicas.")
 
-#st.markdown("""
-#("""
-### Como utilizar
-#Use o menu lateral para navegar entre as telas de **Cadastro** e **Relatórios**.
-#- **Cadastro Clientes**: Adicionar ou editar clientes.
-#- **Cadastro Produtos**: Adicionar ou editar produtos.
-#- **Relatório Vendas**: Visualizar vendas consolidadas.
-#""")
+st.markdown("---")
+
+# 5. Agendamentos
+st.subheader("📅 Agendamentos de Consultas")
+st.write("Conteúdo do controle da agenda de consultas.")
+
+st.markdown("---")
+
+# 6. Relatórios
+st.subheader("📊 Relatórios do Sistema")
+st.write("Conteúdo para geração e exportação de relatórios.")

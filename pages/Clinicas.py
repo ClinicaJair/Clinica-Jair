@@ -12,12 +12,26 @@ from supabase import Client, create_client
 # ==========================================
 st.set_page_config(page_title="Cadastro de Clínicas", layout="wide")
 
-# CSS para customizar a mensagem centralizada na tela
+# CSS para customizar a mensagem centralizada na tela e botões CRUD
 st.markdown(
     """
     <style>
     .block-container { padding-top: 1rem !important; padding-bottom: 0rem !important; }
     header { visibility: hidden; height: 0px; }
+
+    /* Estilização dos Botões de Formulário (CRUD) */
+    div[data-testid="stFormSubmitButton"] > button {
+        background-color: #81D4FA !important;
+        color: #000000 !important;
+        border: none !important;
+        transition: background-color 0.3s ease;
+    }
+
+    div[data-testid="stFormSubmitButton"] > button:hover {
+        background-color: #4FC3F7 !important;
+        color: #000000 !important;
+        border: none !important;
+    }
 
     /* Estilização do Toast / Popup Centralizado */
     .mensagem-centralizada {
@@ -245,7 +259,7 @@ if "mensagem_sucesso" in st.session_state:
 clinica_sel = st.session_state.clinica_selecionada
 id_ativo = clinica_sel.get("codigo") if clinica_sel else None
 
-st.subheader("🏥 Gestão de Clínicas")
+st.subheader("Cadastro de Clínicas")
 
 # ==========================================
 # 5. Interface Gráfica com Abas (Tabs)
@@ -257,7 +271,8 @@ tab_cadastro, tab_localizacao = st.tabs(["📝 Cadastro de Clínicas", "🔍 Loc
 # ------------------------------------------
 with tab_cadastro:
     if id_ativo:
-        st.markdown(f"##### ✏️ Editando Clínica: Código {id_ativo}")
+        razao_exibicao = obter_valor(clinica_sel, "razao")
+        st.markdown(f"##### ✏️ Editando Clínica: Código {id_ativo} - {razao_exibicao}")
         codigo_exibicao = str(id_ativo)
     else:
         st.markdown("##### ➕ Nova Clínica")
@@ -265,8 +280,8 @@ with tab_cadastro:
 
     with st.form(key=f"form_cliente_{st.session_state.update_trigger}"):
 
-        # Linha 1: Dados Principais
-        col1, col2, col3 = st.columns([1, 2.5, 2])
+        # Linha 1: Código (Reduzido), Razão Social e Nome Fantasia
+        col1, col2, col3 = st.columns([0.6, 3.2, 2])
         with col1:
             codigo = st.text_input(
                 "Código", value=codigo_exibicao, disabled=True, help="Gerado automaticamente"
@@ -328,8 +343,8 @@ with tab_cadastro:
                 "Estado", value=obter_valor(clinica_sel, "estado")
             )
 
-        # Linha 4: Cidade e Bairro
-        col10, col11 = st.columns([1, 1])
+        # Linha 4: Bairro (Reduzido), Cidade (Reduzido), Telefone e Telefone 2
+        col10, col11, col12, col13 = st.columns([1.2, 1.2, 1.2, 1.2])
         with col10:
             bairro = st.text_input(
                 "Bairro", value=obter_valor(clinica_sel, "bairro")
@@ -338,9 +353,6 @@ with tab_cadastro:
             cidade = st.text_input(
                 "Cidade", value=obter_valor(clinica_sel, "cidade")
             )
-
-        # Linha 5: Contato
-        col12, col13, col14 = st.columns([1.2, 1.2, 2.1])
         with col12:
             telefone = st.text_input(
                 "Telefone", value=obter_valor(clinica_sel, "telefone")
@@ -349,18 +361,18 @@ with tab_cadastro:
             telefone1 = st.text_input(
                 "Telefone 2", value=obter_valor(clinica_sel, "telefone1")
             )
+
+        # Linha 5: E-mail (Reduzido), Site e Instagram
+        col14, col15, col16 = st.columns([2, 1.5, 1.5])
         with col14:
             email = st.text_input(
                 "E-mail", value=obter_valor(clinica_sel, "email")
             )
-
-        # Linha 6: Links / Redes Sociais
-        col14_2, col14_3 = st.columns([1, 1])
-        with col14_2:
+        with col15:
             site = st.text_input(
                 "Site", value=obter_valor(clinica_sel, "site")
             )
-        with col14_3:
+        with col16:
             instagram = st.text_input(
                 "Instagram", value=obter_valor(clinica_sel, "instagram")
             )
@@ -368,17 +380,17 @@ with tab_cadastro:
         st.markdown("<br>", unsafe_allow_html=True)
 
         # Botões de ação do formulário
-        col15, col16, col17, col18 = st.columns(4)
-        submit_criar = col15.form_submit_button(
+        col_btn1, col_btn2, col_btn3, col_btn4 = st.columns(4)
+        submit_criar = col_btn1.form_submit_button(
             "➕ Inserir", use_container_width=True
         )
-        submit_atualizar = col16.form_submit_button(
+        submit_atualizar = col_btn2.form_submit_button(
             "✏️ Atualizar", use_container_width=True
         )
-        submit_deletar = col17.form_submit_button(
+        submit_deletar = col_btn3.form_submit_button(
             "🗑️ Deletar", use_container_width=True
         )
-        submit_limpar = col18.form_submit_button(
+        submit_limpar = col_btn4.form_submit_button(
             "🧹 Limpar", use_container_width=True
         )
 
@@ -403,7 +415,7 @@ with tab_localizacao:
             on_select="rerun",
             use_container_width=True,
             key=f"tabela_clinicas_{st.session_state.table_key}",
-            height=500,
+            height=350,
         )
 
         # --- PROCESSA A SELEÇÃO DA TABELA ---

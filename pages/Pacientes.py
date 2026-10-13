@@ -12,7 +12,7 @@ from supabase import Client, create_client
 # ==========================================
 st.set_page_config(page_title="Cadastro de Pacientes", layout="wide")
 
-# CSS para customizar a mensagem centralizada na tela
+# CSS para customizar a mensagem centralizada na tela e os botões do formulário CRUD
 st.markdown(
     """
     <style>
@@ -40,6 +40,21 @@ st.markdown(
     @keyframes fadeIn {
         from { opacity: 0; transform: translate(-50%, -10px); }
         to { opacity: 1; transform: translate(-50%, 0); }
+    }
+
+    /* Customização dos botões CRUD do formulário */
+    div[data-testid="stForm"] button {
+        background-color: #81D4FA !important;
+        color: #000000 !important;
+        border: 1px solid #81D4FA !important;
+        font-weight: bold;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    div[data-testid="stForm"] button:hover {
+        background-color: #4FC3F7 !important;
+        border-color: #4FC3F7 !important;
+        color: #000000 !important;
     }
     </style>
     """,
@@ -237,7 +252,7 @@ if "mensagem_sucesso" in st.session_state:
 paciente_sel = st.session_state.paciente_selecionada
 id_ativo = paciente_sel.get("codigo") if paciente_sel else None
 
-st.subheader("🏥 Gestão de Pacientes")
+st.subheader("Cadastro de Pacientes")
 
 # ==========================================
 # 5. Interface Gráfica com Abas (Tabs)
@@ -257,8 +272,8 @@ with tab_cadastro:
 
     with st.form(key=f"form_cliente_{st.session_state.update_trigger}"):
 
-        # Linha 1: Dados Principais
-        col1, col2, col3 = st.columns([1, 2.5, 2])
+        # Linha 1: Código (0.8), Nome (2.5), Apelido (Aumentado para 1.85), Dt.Nascimento (Reduzido pela metade para 0.65)
+        col1, col2, col3, col6 = st.columns([0.8, 2.5, 1.85, 0.65])
         with col1:
             codigo = st.text_input(
                 "Código", value=codigo_exibicao, disabled=True, help="Gerado automaticamente"
@@ -270,17 +285,6 @@ with tab_cadastro:
         with col3:
             apelido = st.text_input(
                 "Apelido", value=paciente_sel.get("apelido", "") if paciente_sel else ""
-            )
-
-        # Linha 2: Documentações e Data de Nascimento
-        col4, col5, col6 = st.columns([2, 2, 1.5])
-        with col4:
-            cpf = st.text_input(
-                "CPF", value=paciente_sel.get("cpf", "") if paciente_sel else ""
-            )
-        with col5:
-            rg = st.text_input(
-                "RG", value=paciente_sel.get("rg", "") if paciente_sel else ""
             )
         with col6:
             data_inicial = None
@@ -304,8 +308,27 @@ with tab_cadastro:
                 format="DD/MM/YYYY"
             )
 
-        # Linha 3: Localização (Endereço)
-        col7, col8, col9 = st.columns([1.5, 3.5, 1.2])
+        # Linha 2: CPF, RG, Profissão, Origem
+        col4, col5, col12, col15_2 = st.columns([1, 1, 1.5, 1.5])
+        with col4:
+            cpf = st.text_input(
+                "CPF", value=paciente_sel.get("cpf", "") if paciente_sel else ""
+            )
+        with col5:
+            rg = st.text_input(
+                "RG", value=paciente_sel.get("rg", "") if paciente_sel else ""
+            )
+        with col12:
+            profissao = st.text_input(
+                "Profissão", value=paciente_sel.get("profissao", "") if paciente_sel else ""
+            )
+        with col15_2:
+            origem = st.text_input(
+                "Origem", value=paciente_sel.get("origem", "") if paciente_sel else ""
+            )
+
+        # Linha 3: CEP, Endereço, Estado
+        col7, col8, col9 = st.columns([1, 4.5, 0.8])
         with col7:
             cep = st.text_input(
                 "CEP", value=paciente_sel.get("cep", "") if paciente_sel else ""
@@ -319,8 +342,8 @@ with tab_cadastro:
                 "Estado", value=paciente_sel.get("estado", "") if paciente_sel else ""
             )
 
-        # Linha 4: Bairro, Cidade e Profissão
-        col10, col11, col12 = st.columns([1, 1, 1])
+        # Linha 4: Bairro, Cidade, Telefone, Telefone 2
+        col10, col11, col13, col14 = st.columns([1, 1, 1.2, 1.2])
         with col10:
             bairro = st.text_input(
                 "Bairro", value=paciente_sel.get("bairro", "") if paciente_sel else ""
@@ -329,13 +352,6 @@ with tab_cadastro:
             cidade = st.text_input(
                 "Cidade", value=paciente_sel.get("cidade", "") if paciente_sel else ""
             )
-        with col12:
-            profissao = st.text_input(
-                "Profissão", value=paciente_sel.get("profissao", "") if paciente_sel else ""
-            )
-
-        # Linha 5: Contato
-        col13, col14, col15 = st.columns([1.2, 1.2, 2.1])
         with col13:
             telefone = st.text_input(
                 "Telefone", value=paciente_sel.get("telefone", "") if paciente_sel else ""
@@ -345,16 +361,12 @@ with tab_cadastro:
                 "Telefone 2",
                 value=paciente_sel.get("telefone1", "") if paciente_sel else "",
             )
+
+        # Linha 5: Contato, Email, Instagram
+        col15, col15_3, col15_4 = st.columns([1.5, 2, 1.5])
         with col15:
             contato = st.text_input(
                 "Contato", value=paciente_sel.get("contato", "") if paciente_sel else ""
-            )
-
-        # Linha 6: Origem, Email e Redes Sociais
-        col15_2, col15_3, col15_4 = st.columns([1, 1, 1])
-        with col15_2:
-            origem = st.text_input(
-                "Origem", value=paciente_sel.get("origem", "") if paciente_sel else ""
             )
         with col15_3:
             email = st.text_input(
@@ -403,7 +415,7 @@ with tab_localizacao:
             on_select="rerun",
             use_container_width=True,
             key=f"tabela_pacientes_{st.session_state.table_key}",
-            height=500,
+            height=350,
         )
 
         # --- PROCESSA A SELEÇÃO DA TABELA ---

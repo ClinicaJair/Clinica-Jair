@@ -12,7 +12,7 @@ from supabase import Client, create_client
 # ==========================================
 st.set_page_config(page_title="Cadastro de Médicos", layout="wide")
 
-# CSS para customizar a mensagem centralizada na tela
+# CSS para customizar a mensagem centralizada e aplicar tom azul claro nos botões do formulário
 st.markdown(
     """
     <style>
@@ -40,6 +40,27 @@ st.markdown(
     @keyframes fadeIn {
         from { opacity: 0; transform: translate(-50%, -10px); }
         to { opacity: 1; transform: translate(-50%, 0); }
+    }
+
+    /* Estilização em Azul Bem Claro para os Botões do Form (CRUD) */
+    div[data-testid="stFormSubmitButton"] > button {
+        background-color: #81D4FA !important;
+        color: #000000 !important;
+        border: 1px solid #4FC3F7 !important;
+        border-radius: 6px !important;
+        font-weight: 600 !important;
+        transition: background-color 0.2s ease, transform 0.1s ease !important;
+    }
+
+    div[data-testid="stFormSubmitButton"] > button:hover {
+        background-color: #4FC3F7 !important;
+        color: #000000 !important;
+        transform: scale(1.02);
+    }
+
+    div[data-testid="stFormSubmitButton"] > button:active {
+        background-color: #29B6F6 !important;
+        color: #FFFFFF !important;
     }
     </style>
     """,
@@ -176,11 +197,11 @@ def carregar_dados(pesquisa=""):
 
 
 def carregar_especialidades():
-    """Busca a lista de especialidades cadastradas na tabela 'especialidades'."""
+    """Busca a lista de especialidades e seus respectivos valores na tabela 'especialidades'."""
     try:
-        response = supabase.table("especialidades").select("nome").order("nome").execute()
+        response = supabase.table("especialidades").select("nome, valor").order("nome").execute()
         if response.data:
-            return [item["nome"] for item in response.data if item.get("nome")]
+            return response.data
         return []
     except Exception as e:
         st.error(f"Erro ao carregar especialidades: {e}")
@@ -248,11 +269,15 @@ if "mensagem_sucesso" in st.session_state:
 
 medico_sel = st.session_state.medico_selecionada
 id_ativo = medico_sel.get("codigo") if medico_sel else None
+nome_ativo = medico_sel.get("nome", "") if medico_sel else ""
 
-st.subheader("🏥 Gestão de Médicos")
+# Título alterado sem imagem/emoji
+st.subheader("Cadastro de Médicos")
 
-# Carrega a lista de especialidades
-lista_especialidades = carregar_especialidades()
+# Carrega a lista de objetos de especialidades (contendo 'nome' e 'valor')
+dados_especialidades = carregar_especialidades()
+lista_nomes_especialidades = [item["nome"] for item in dados_especialidades if item.get("nome")]
+mapa_valores_especialidades = {item["nome"]: item.get("valor", 0.0) for item in dados_especialidades if item.get("nome")}
 
 # ==========================================
 # 5. Interface Gráfica com Abas (Tabs)
@@ -264,7 +289,7 @@ tab_cadastro, tab_localizacao = st.tabs(["📝 Cadastro do Médico", "🔍 Local
 # ------------------------------------------
 with tab_cadastro:
     if id_ativo:
-        st.markdown(f"##### ✏️ Editando Médico: Código {id_ativo}")
+        st.markdown(f"##### ✏️ Editando Médico: Código {id_ativo} - {nome_ativo}")
         codigo_exibicao = str(id_ativo)
     else:
         st.markdown("##### ➕ Novo Médico")
@@ -272,8 +297,8 @@ with tab_cadastro:
 
     with st.form(key=f"form_cliente_{st.session_state.update_trigger}"):
 
-        # Linha 1: Dados Principais
-        col1, col2, col3 = st.columns([1, 3, 1.5])
+        # Linha 1: Código, Nome, Dt. Nascimento e CRM
+        col1, col2, col3, col3_2 = st.columns([0.5, 2.5, 1.2, 1.3])
         with col1:
             codigo = st.text_input(
                 "Código", value=codigo_exibicao, disabled=True, help="Gerado automaticamente"
@@ -292,7 +317,6 @@ with tab_cadastro:
                 except Exception:
                     data_inicial = None
 
-            # Limites de seleção do calendário:
             min_data = datetime.date(1900, 1, 1)
             max_data = datetime.date.today() + relativedelta(months=3)
 
@@ -303,9 +327,13 @@ with tab_cadastro:
                 max_value=max_data,
                 format="DD/MM/YYYY"
             )
+        with col3_2:
+            crm = st.text_input(
+                "CRM", value=medico_sel.get("crm", "") if medico_sel else ""
+            )
 
-        # Linha 2: Documentações
-        col4, col5, col6 = st.columns([2, 2, 1.5])
+        # Linha 2: CPF, RG, Especialidade e Especialidade Valor (Sem Editar)
+        col4, col5, col6, col6_val = st.columns([1.2, 1.2, 1.8, 1.3])
         with col4:
             cpf = st.text_input(
                 "CPF", value=medico_sel.get("cpf", "") if medico_sel else ""
@@ -315,12 +343,40 @@ with tab_cadastro:
                 "RG", value=medico_sel.get("rg", "") if medico_sel else ""
             )
         with col6:
-            crm = st.text_input(
-                "CRM", value=medico_sel.get("crm", "") if medico_sel else ""
+            esp_atual = medico_sel.get("especialidade") if medico_sel else None
+            index_esp = 0
+            if esp_atual and esp_atual in lista_nomes_especialidades:
+                index_esp = lista_nomes_especialidades.index(esp_atual)
+
+            especialidade = st.selectbox(
+                "Especialidade",
+                options=lista_nomes_especialidades,
+                index=index_esp if lista_nomes_especialidades else None,
+                placeholder="Selecione uma especialidade..."
             )
 
-        # Linha 3: Localização (Endereço)
-        col7, col8, col9 = st.columns([1.5, 3.5, 1.2])
+        # Atualiza o valor correspondente à especialidade selecionada
+        valor_padrao_esp = 0.0
+        if especialidade and especialidade in mapa_valores_especialidades:
+            valor_padrao_esp = float(mapa_valores_especialidades[especialidade] or 0.0)
+        elif medico_sel and medico_sel.get("especialidade_valor") is not None:
+            try:
+                valor_padrao_esp = float(medico_sel.get("especialidade_valor"))
+            except ValueError:
+                valor_padrao_esp = 0.0
+
+        especialidade_valor = valor_padrao_esp
+
+        with col6_val:
+            st.text_input(
+                "Valor Especialidade",
+                value=f"R$ {especialidade_valor:,.2f}".replace(",", "X").replace(".", ",").replace("X", "."),
+                disabled=True,
+                help="Valor carregado automaticamente conforme a especialidade"
+            )
+
+        # Linha 3: CEP, Endereço e Bairro
+        col7, col8, col9 = st.columns([1.2, 2.8, 1.5])
         with col7:
             cep = st.text_input(
                 "CEP", value=medico_sel.get("cep", "") if medico_sel else ""
@@ -330,23 +386,20 @@ with tab_cadastro:
                 "Endereço", value=medico_sel.get("endereco", "") if medico_sel else ""
             )
         with col9:
-            estado = st.text_input(
-                "Estado", value=medico_sel.get("estado", "") if medico_sel else ""
-            )
-
-        # Linha 4: Cidade e Bairro
-        col10, col11 = st.columns([1, 1])
-        with col10:
             bairro = st.text_input(
                 "Bairro", value=medico_sel.get("bairro", "") if medico_sel else ""
             )
-        with col11:
+
+        # Linha 4: Cidade, Estado, Telefone e Telefone 2
+        col10, col11, col12, col13 = st.columns([1.3, 0.5, 1.8, 1.8])
+        with col10:
             cidade = st.text_input(
                 "Cidade", value=medico_sel.get("cidade", "") if medico_sel else ""
             )
-
-        # Linha 5: Contato
-        col12, col13, col14 = st.columns([1.2, 1.2, 2.1])
+        with col11:
+            estado = st.text_input(
+                "UF", value=medico_sel.get("estado", "") if medico_sel else ""
+            )
         with col12:
             telefone = st.text_input(
                 "Telefone", value=medico_sel.get("telefone", "") if medico_sel else ""
@@ -356,34 +409,21 @@ with tab_cadastro:
                 "Telefone 2",
                 value=medico_sel.get("telefone1", "") if medico_sel else "",
             )
+
+        # Linha 5: E-mail e Instagram
+        col14, col14_2 = st.columns([3.0, 2.5])
         with col14:
             email = st.text_input(
                 "E-mail", value=medico_sel.get("email", "") if medico_sel else ""
             )
-
-        # Linha 6: Redes Sociais e Especialidade
-        col14_2, col14_3 = st.columns([1.3, 1.3])
         with col14_2:
             instagram = st.text_input(
                 "Instagram", value=medico_sel.get("instagram", "") if medico_sel else ""
             )
-        with col14_3:
-            # Lógica para pré-selecionar o valor gravado anteriormente na edição
-            esp_atual = medico_sel.get("especialidade") if medico_sel else None
-            index_esp = 0
-            if esp_atual and esp_atual in lista_especialidades:
-                index_esp = lista_especialidades.index(esp_atual)
-
-            especialidade = st.selectbox(
-                "Especialidade",
-                options=lista_especialidades,
-                index=index_esp if lista_especialidades else None,
-                placeholder="Selecione uma especialidade..."
-            )
 
         st.markdown("<br>", unsafe_allow_html=True)
 
-        # Botões de ação do formulário
+        # Botões de ação do formulário (Estilizados via CSS)
         col15, col16, col17, col18 = st.columns(4)
         submit_criar = col15.form_submit_button(
             "➕ Inserir", use_container_width=True
@@ -419,7 +459,7 @@ with tab_localizacao:
             on_select="rerun",
             use_container_width=True,
             key=f"tabela_medicos_{st.session_state.table_key}",
-            height=500,
+            height=350,
         )
 
         # --- PROCESSA A SELEÇÃO DA TABELA ---
@@ -473,6 +513,7 @@ payload = {
     "crm": crm,
     "instagram": instagram,
     "especialidade": especialidade,
+    "especialidade_valor": especialidade_valor,
 }
 
 # --- INSERIR ---
